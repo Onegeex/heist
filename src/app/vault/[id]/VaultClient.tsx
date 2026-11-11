@@ -78,6 +78,12 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [adult, setAdult] = useState(false);
+  useEffect(() => {
+    try {
+      setAdult(localStorage.getItem("heist-18") === "yes");
+    } catch {}
+  }, []);
 
   const update = useCallback(
     (s: Session | null) => {
@@ -166,7 +172,7 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
   const expired = Boolean(session && status === "live" && msLeft <= 0);
   const stale = Boolean(session && !session.claimed && status !== "claimed" && session.round !== v.round);
   const timedOut = Boolean(data.countdownEndsAt && now > data.countdownEndsAt);
-  const canOpen = !!account && (data.attemptsLeft ?? 0) > 0 && !v.paused && !bank.mainnetDisabled && bank.onDuty.vaults && !timedOut && !!guardian;
+  const canOpen = (adult || bank.demo) && !!account && (data.attemptsLeft ?? 0) > 0 && !v.paused && !bank.mainnetDisabled && bank.onDuty.vaults && !timedOut && !!guardian;
   const live = session && status === "live" && !expired && !stale;
   const lastLive = data.feed.find((r) => r.status === "live" && r.turns.length) ?? data.feed[0];
 
@@ -380,6 +386,21 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
             {bank.mainnetDisabled && <div className="notice">The operator has switched mainnet off. The bank is closed.</div>}
             {!bank.onDuty.vaults && <div className="notice">The guardians are off duty: today&apos;s AI budget is spent. They&apos;re back at 00:00 UTC.</div>}
             {!guardian && <div className="notice">This vault&apos;s guardian isn&apos;t registered with the server yet, so it can&apos;t take attempts.</div>}
+            {!bank.demo && (
+              <label className="muted" style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: ".9rem", marginTop: 10 }}>
+                <input
+                  type="checkbox"
+                  checked={adult}
+                  onChange={(e) => {
+                    setAdult(e.target.checked);
+                    try {
+                      localStorage.setItem("heist-18", e.target.checked ? "yes" : "no");
+                    } catch {}
+                  }}
+                />
+                <span>I&apos;m 18 or older, I understand entry fees go into the vault and aren&apos;t refunded, and paid play is legal where I live.</span>
+              </label>
+            )}
             <div className="composer">
               <button className="btn" disabled={!canOpen || !!busy} onClick={openAttempt} style={{ width: "100%", justifyContent: "center" }}>
                 {busy === "open" ? "Opening…" : `Pay ${near(v.fee, 3)} NEAR and face ${inSentence(guardianName)}`}
