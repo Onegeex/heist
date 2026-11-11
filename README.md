@@ -105,9 +105,13 @@ cp .env.example .env.local   # BANK_ID, both guardian seeds, LLM_API_KEY, Upstas
 
 Deploying needs `near` CLI (near-cli-rs), `cargo-near`, the `wasm32-unknown-unknown` target and a C linker.
 
-## NEAR Intents (cross-chain cash-out)
+## NEAR Intents: pay in and cash out from any chain
 
-NEAR Intents has no testnet, so this is mainnet-only. After a win, the winner picks a token and chain; `/api/payout` gets a 1Click quote with a deposit address, and the winner's wallet sends one transaction to `wrap.near`: `storage_deposit`, `near_deposit`, then `ft_transfer` of the wNEAR to 1Click. The bank itself only ever pays NEAR to the winner's own account.
+NEAR Intents has no testnet, so both directions are mainnet-only. On testnet the panels show live 1Click prices as previews.
+
+**Top up** (`/api/topup`, the "Top up from any chain" panel on every vault): the player picks USDC, USDT, ETH, SOL or BTC on one of ~14 chains and an amount (capped at $500 per quote). 1Click returns a deposit address on that chain; the player sends from their usual wallet, and wNEAR is delivered straight to their own NEAR account, then one click unwraps it. Heist never holds the money, and a failed swap refunds to the player's address on the origin chain.
+
+**Cash out**: after a win, the winner picks a token and chain; `/api/payout` gets a 1Click quote with a deposit address, and the winner's wallet sends one transaction to `wrap.near`: `storage_deposit`, `near_deposit`, then `ft_transfer` of the wNEAR to 1Click. The bank itself only ever pays NEAR to the winner's own account.
 
 ## Layout
 
@@ -127,7 +131,7 @@ scripts/                  deploy, keygen, demo attacks
 
 - If an AI budget runs out while an attempt is open, that attempt's fee isn't refunded. New attempts are blocked while guardians are off duty.
 - The resolve meter is the model's own estimate, not a measurement.
-- Paying the entry fee from another chain (rather than cashing out to one) isn't built yet; players need testnet NEAR.
+- Top-ups from other chains (NEAR Intents 1Click) run only on mainnet; on testnet the panel shows live price previews and players use testnet NEAR.
 - The first version of Heist used a single-vault contract (`heist-vault-124887.testnet`); it's retired and no longer used by the site.
 - **Real money:** paid entry plus a prize pool counts as gambling in some places even when skill decides the outcome. The hackathon build runs on testnet; a mainnet bank should run only with tiny caps, the kill switch, and legal advice on which countries to allow.
 

@@ -88,7 +88,7 @@ export async function POST(req: Request) {
         refundTo: b.refundTo,
         refundType: "ORIGIN_CHAIN",
         // dry runs (testnet) still need a real mainnet recipient for pricing
-        recipient: isLive ? b.account : "wrap.near",
+        recipient: isLive ? b.account : "near.near",
         recipientType: "DESTINATION_CHAIN",
         deadline: new Date(Date.now() + 30 * 60_000).toISOString(),
       }),
