@@ -102,6 +102,15 @@ export async function createSponsoredVault(network: Net, bank: string, config: S
   return hashOf(out);
 }
 
+/** Mainnet: turn wNEAR delivered by a top-up into plain NEAR. */
+export async function unwrap(amountYocto: string) {
+  const w = await (await getSelector("mainnet")).wallet();
+  await w.signAndSendTransaction({
+    receiverId: "wrap.near",
+    actions: [fc("near_withdraw", { amount: amountYocto }, `20${TGAS}`, "1")],
+  });
+}
+
 /** Mainnet: wrap the winnings and send wNEAR to a NEAR Intents 1Click deposit address. */
 export async function cashOut(depositAddress: string, amountYocto: string) {
   const w = await (await getSelector("mainnet")).wallet();

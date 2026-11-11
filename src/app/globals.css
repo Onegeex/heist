@@ -168,3 +168,5 @@ footer.site { padding: 36px 0 50px; color: var(--muted); font-size: .92rem; bord
 .sponsor-grid label { font-size: .92rem; color: var(--muted); }
 .sponsor-grid textarea.field { font: 15px/1.5 var(--body); }
 @media (max-width: 700px) { .sponsor-grid { grid-template-columns: 1fr; } }
+.topup { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rivet); }
+.topup .btn { margin-top: 4px; }

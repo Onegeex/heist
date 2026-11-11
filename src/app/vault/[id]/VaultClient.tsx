@@ -11,6 +11,7 @@ import { Chat } from "@/components/Chat";
 import { Countdown } from "@/components/Countdown";
 import { Ledger } from "@/components/Ledger";
 import { CashOut } from "@/components/CashOut";
+import { TopUp } from "@/components/TopUp";
 
 type VaultRes = {
   vault: Vault;
@@ -308,6 +309,7 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
             <button className="btn" onClick={() => wallet.connect(bank.network, bank.bank)}>Connect a NEAR wallet</button>
           )}
         </div>
+        {!bank.demo && <TopUp account={account} feeYocto={v.fee} network={bank.network} />}
         {guardian && (
           <p style={{ fontSize: ".9rem", marginTop: 12 }}>
             <Link href={`/rules#vault-${v.id}`}>{guardianName}&apos;s orders and patch notes</Link>
