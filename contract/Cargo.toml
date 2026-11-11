@@ -1,8 +1,8 @@
 [package]
-name = "heist-vault"
+name = "heist-bank"
 version = "0.1.0"
 edition = "2021"
-description = "Heist: a bounty vault guarded by an AI. Talk the guardian into releasing it; the contract caps what any release can do."
+description = "HeistBank: many AI-guarded bounty vaults with rising fees, a countdown, and sponsored vaults. The contract caps what any release can do."
 license = "MIT"
 
 [lib]
