@@ -23,8 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <footer className="site">
             Built at NEAR HACKATHON. Guardian prompt and contract rules are public on{" "}
             <a href="/rules">the rules page</a>. Source:{" "}
-            <a href="https://github.com/Onegeex/heist">github.com/Onegeex/heist</a>. Also by this builder:{" "}
-            <a href="https://github.com/Onegeex/intentrail">IntentRail</a>.
+            <a href="https://github.com/Onegeex/heist">github.com/Onegeex/heist</a>.
           </footer>
         </div>
       </body>
