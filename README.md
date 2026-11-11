@@ -116,7 +116,7 @@ scripts/             deploy, keygen, demo attacks
 
 ## Baseline vs new work
 
-All code in this repo was written during the hackathon window, starting Nov 11, 2026. There is no pre-hackathon baseline. The submitted state is tagged `hackathon-submission`.
+All code in this repo was written during the hackathon window, starting Nov 11, 2026. There is no pre-hackathon baseline. The submitted state is the `hackathon-submission` branch (identical to `main` at submission time).
 
 ## Libraries and AI-generated code
 
