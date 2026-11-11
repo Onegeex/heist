@@ -283,3 +283,20 @@ fn failed_transfer_is_kept_as_unclaimed() {
     assert!(!v.on_payout(acc(ALICE), U128(NEAR)));
     assert_eq!(v.get_unclaimed(acc(ALICE)).0, NEAR);
 }
+
+// ---------- cross-language ----------
+
+#[test]
+fn node_signature_is_accepted() {
+    // Produced by src/lib/release.ts (Node crypto) with the same seed as guardian().
+    // If the TS and Rust message formats ever drift, this fails.
+    const NODE_SIG: &str = "zEB7WE6idK1sSAvgcRBKNW9oAhFUkCQKMCffjP3i9Hom7D5Dpbi6bw2foe6OncXutuHxxfdY2R0dQ4+fMH1nAw==";
+    use near_sdk::base64::Engine;
+    let sig = near_sdk::base64::engine::general_purpose::STANDARD.decode(NODE_SIG).unwrap();
+    let mut v = setup(NEAR);
+    let id = open(&mut v, ALICE, T0);
+    assert_eq!(id, 1);
+    ctx(ALICE, 0, T0 + 1);
+    let _ = v.claim(U64(id), Base64VecU8(sig), None);
+    assert_eq!(v.get_state().round, 2);
+}
