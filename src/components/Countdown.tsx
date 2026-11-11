@@ -17,7 +17,7 @@ export function Countdown({ endsAt, idleLabel = "Starts with the first attempt" 
   const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
   return (
-    <span className="num" style={{ fontWeight: 700 }}>
+    <span className={`num countdown${ms < 3_600_000 ? " urgent" : ""}`} style={{ fontWeight: 700 }}>
       {h}:{String(m).padStart(2, "0")}:{String(sec).padStart(2, "0")}
     </span>
   );

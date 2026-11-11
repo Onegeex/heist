@@ -98,7 +98,7 @@ export function LobbyClient({ guardianName }: { guardianName: string }) {
         {error && <div className="notice" role="alert">{error}</div>}
         {done && (
           <div style={{ textAlign: "center", padding: "18px 0" }}>
-            <span className={`stamp big slam ${status === "released" ? "released" : "refused"}`}>{status === "released" ? "SAFE OPEN" : "REFUSED"}</span>
+            <span className={`stamp big slam ${status === "released" ? "released vault-open" : "refused"}`}>{status === "released" ? "SAFE OPEN" : "REFUSED"}</span>
             <p style={{ margin: "14px auto 0" }}>
               {run.record && <Link href={`/share/${encodeURIComponent(run.record.key)}`}>Share it</Link>}{" "}
               <button className="btn ghost" onClick={() => save({})}>

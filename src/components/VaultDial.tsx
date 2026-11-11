@@ -61,7 +61,7 @@ export function VaultDial({ bounty, caption = "NEAR in the vault", open = false 
         <path d="M250 50 l-10 -16 h20 z" fill="#e0303f" />
 
         {/* wheel handle */}
-        <g style={{ transformOrigin: "250px 250px", transform: open ? "rotate(120deg)" : "none", transition: "transform 1.2s ease" }}>
+        <g className="dial-handle" style={open ? { transform: "rotate(120deg)" } : undefined}>
           {[0, 120, 240].map((r) => (
             <g key={r} transform={`rotate(${r} 250 250)`}>
               <rect x="244" y="132" width="12" height="70" rx="5" fill="url(#spoke)" />
@@ -70,7 +70,8 @@ export function VaultDial({ bounty, caption = "NEAR in the vault", open = false 
           ))}
         </g>
 
-        {/* hub: the bounty */}
+        {/* hub: the bounty, with a slow glow behind it */}
+        <circle className="dial-hub-glow" cx="250" cy="250" r="108" fill="rgba(232,196,105,.18)" opacity=".35" />
         <circle cx="250" cy="250" r="96" fill="url(#hub)" stroke="#f0d68f" strokeWidth="2" />
         <circle cx="250" cy="250" r="84" fill="none" stroke="rgba(60,44,10,.35)" strokeWidth="1.5" />
         <text x="250" y="262" textAnchor="middle" fontFamily="var(--display)" fontWeight="900" fontSize={bounty.length > 6 ? 46 : 58} fill="#1b1608" className="num">

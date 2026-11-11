@@ -18,12 +18,12 @@ export default async function Home() {
     <>
       <section className="hero">
         <div>
-          <h1>Can you rob this bank?</h1>
-          <p className="lede">
+          <h1 className="reveal">Can you rob this bank?</h1>
+          <p className="lede rise" style={{ animationDelay: ".55s" }}>
             Every vault is guarded by an AI with public orders and one job: never open the door. Talk one out of it and
             the gold is yours. Every failed attempt makes the vault bigger, and the price of the next try goes up with it.
           </p>
-          <div className="ctas">
+          <div className="ctas rise" style={{ animationDelay: ".75s" }}>
             {biggest && (
               <Link className="btn" href={`/vault/${biggest.id}`}>
                 Rob the {biggest.name}

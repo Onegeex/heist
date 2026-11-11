@@ -9,6 +9,7 @@ import type { BankSnapshot } from "@/lib/bank";
 import * as wallet from "@/lib/wallet";
 import { Chat } from "@/components/Chat";
 import { Countdown } from "@/components/Countdown";
+import { CountUp } from "@/components/CountUp";
 import { Ledger } from "@/components/Ledger";
 import { CashOut } from "@/components/CashOut";
 import { TopUp } from "@/components/TopUp";
@@ -275,7 +276,7 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
       <aside className="plate" style={{ alignSelf: "start" }}>
         <div className="floor-tag">{v.sponsor ? `Sponsored by ${v.sponsor}` : guardian?.floor === "gold" ? "Basement, 48 m down" : "First floor"}</div>
         <h2 style={{ fontSize: "2rem", margin: "4px 0 10px" }}>{v.name}</h2>
-        <div className="display num" style={{ fontSize: "3.4rem", color: "var(--brass)" }}>{near(v.pot, 2)}</div>
+        <div className="display" style={{ fontSize: "3.4rem", color: "var(--brass)" }}><CountUp value={Number(BigInt(v.pot) / 10n ** 21n) / 1000} digits={2} /></div>
         <div className="muted" style={{ marginBottom: 14 }}>NEAR inside{bank.demo ? " (play money)" : ""}</div>
         <div className="stat"><span>Entry right now</span><b>{near(v.fee, 3)} NEAR</b></div>
         <div className="stat"><span>Max win</span><b>{near(v.maxPayout, 0)} NEAR</b></div>
@@ -333,7 +334,7 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
             {error && <div className="notice" role="alert">{error}</div>}
             {(status === "released" || status === "claimed") && (
               <div style={{ textAlign: "center", padding: "18px 0" }}>
-                <span className="stamp big released slam">VAULT OPEN</span>
+                <span className="stamp big released slam vault-open">VAULT OPEN</span>
                 {session.claimed ? (
                   <>
                     <p style={{ margin: "14px auto 0" }}>

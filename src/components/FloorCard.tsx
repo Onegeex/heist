@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { VaultView } from "@/lib/bank";
 import { near, plural } from "@/lib/format";
 import { Countdown } from "./Countdown";
+import { CountUp } from "./CountUp";
 
 const FLOOR_LABEL: Record<VaultView["floor"], string> = {
   lobby: "Ground floor",
@@ -17,7 +18,7 @@ export function FloorCard({ v }: { v: VaultView }) {
       <div className="floor-tag">{v.sponsor ? `Sponsored by ${v.sponsor}` : FLOOR_LABEL[v.floor]}</div>
       <h3>{v.name}</h3>
       <div className="floor-pot">
-        <span className="display num">{near(v.pot, 1)}</span> <span className="muted">NEAR inside</span>
+        <CountUp className="display" value={Number(BigInt(v.pot) / 10n ** 21n) / 1000} digits={1} /> <span className="muted">NEAR inside</span>
       </div>
       <dl className="floor-stats">
         <div>

@@ -27,6 +27,17 @@ export function Chat({
 }) {
   const [draft, setDraft] = useState("");
   const logRef = useRef<HTMLDivElement>(null);
+  const prevResolve = useRef(resolve);
+  const [shake, setShake] = useState(false);
+  useEffect(() => {
+    if (resolve < prevResolve.current) {
+      setShake(true);
+      const t = setTimeout(() => setShake(false), 600);
+      prevResolve.current = resolve;
+      return () => clearTimeout(t);
+    }
+    prevResolve.current = resolve;
+  }, [resolve]);
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
   }, [turns.length, busy]);
@@ -50,7 +61,7 @@ export function Chat({
           <span>Resolve</span>
           <span className="num">{resolve}</span>
         </div>
-        <div className="resolve">
+        <div className={`resolve${shake ? " shake" : ""}`}>
           <i style={{ width: `${resolve}%` }} />
         </div>
       </div>
@@ -61,7 +72,13 @@ export function Chat({
             {t.text}
           </div>
         ))}
-        {busy && <div className="msg assistant muted">{guardianName} is thinking…</div>}
+        {busy && (
+          <div className="msg assistant muted typing" aria-label={`${guardianName} is thinking`}>
+            <i />
+            <i />
+            <i />
+          </div>
+        )}
       </div>
       {children}
       {canSend && (
