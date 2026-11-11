@@ -41,6 +41,21 @@ Signed message: `heist-v1|<vault>|round:<n>|attempt:<id>|player:<account>|releas
 - **Spend limits that survive restarts** (Upstash Redis): messages per IP per hour, per wallet per day, and a global daily AI-call budget. In production, the guardian refuses to run without a durable store.
 - **Mainnet kill switch:** with `NEAR_NETWORK=mainnet` and `MAINNET_DISABLED=true` (the default), every money route refuses. Even when on, the guardian won't sign if the vault's cap exceeds `MAINNET_MAX_PAYOUT_NEAR`.
 
+## Live testnet vault
+
+- Vault: [`heist-vault-124887.testnet`](https://testnet.nearblocks.io/address/heist-vault-124887.testnet), entry fee 0.1 NEAR, max win 2 NEAR. Its full-access key was deleted right after deploy, so the code can't be changed and nobody can take the bounty out.
+- Owner: `heist-owner-124887.testnet` (pause, rotate Warden's key, change fee or cap; no withdrawal).
+- Check it: `near contract call-function as-read-only heist-vault-124887.testnet get_state json-args '{}' network-config testnet now`
+
+Smoke test run against the deployed contract on Nov 11, 2026:
+
+| Step | Result |
+|---|---|
+| `open_attempt` with 0.1 NEAR | attempt 1 opened, fee added to the bounty |
+| `claim` with a forged signature | transaction failed (`BAD_SIGNATURE`) |
+| `claim` with a release signed by the server code in `src/lib/release.ts` | paid 2 NEAR (the cap), round moved to 2, the rest stayed in the vault |
+| same `claim` again | transaction failed (`USED`) |
+
 ## NEAR Intents (cross-chain cash-out)
 
 NEAR Intents has no testnet, so this is mainnet-only. After a win, the winner can pick a token and chain. `/api/payout` gets a 1Click quote with a deposit address, then the winner's wallet sends one transaction to `wrap.near`: `storage_deposit` for the deposit address, `near_deposit`, then `ft_transfer` of the wNEAR to 1Click. The vault itself only ever pays NEAR to the winner's own account.
