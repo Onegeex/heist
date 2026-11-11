@@ -204,7 +204,7 @@ export function HeistClient() {
     } catch (e) {
       setSession(session);
       setDraft(message);
-      setError(e instanceof Error ? e.message : "Warden didn't answer.");
+      setError(e instanceof Error ? e.message : "The Governor didn't answer.");
     } finally {
       setBusy(null);
     }
@@ -252,7 +252,7 @@ export function HeistClient() {
           {info.demo ? (
             <p className="muted" style={{ fontSize: ".9rem" }}>
               Demo vault. You&apos;re playing as <b>{account}</b>. No wallet needed.
-              {!info.liveGuardian && " Warden is a scripted stand-in here."}
+              {!info.liveGuardian && " The Governor is a scripted stand-in here."}
             </p>
           ) : account ? (
             <p className="muted" style={{ fontSize: ".9rem" }}>
@@ -265,16 +265,16 @@ export function HeistClient() {
         </div>
       </aside>
 
-      <section className="plate chat" aria-label="Conversation with Warden">
+      <section className="plate chat" aria-label="Conversation with the Governor">
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12, flexWrap: "wrap" }}>
-          <h2 style={{ margin: 0, marginRight: "auto", fontSize: "2.2rem" }}>Warden</h2>
+          <h2 style={{ margin: 0, marginRight: "auto", fontSize: "2.2rem" }}>The Governor</h2>
           {session && status === "live" && !expired && (
             <span className="muted num">{session.turnsLeft} messages left, {Math.max(0, Math.floor(msLeft / 60000))}:{String(Math.max(0, Math.floor(msLeft / 1000) % 60)).padStart(2, "0")}</span>
           )}
         </div>
-        <div aria-label={`Warden's resolve ${resolve} out of 100`} style={{ marginBottom: 16 }}>
+        <div aria-label={`The Governor's resolve ${resolve} out of 100`} style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".85rem" }} className="muted">
-            <span>Warden&apos;s resolve</span><span className="num">{resolve}</span>
+            <span>The Governor&apos;s resolve</span><span className="num">{resolve}</span>
           </div>
           <div className="resolve"><i style={{ width: `${resolve}%` }} /></div>
         </div>
@@ -294,12 +294,12 @@ export function HeistClient() {
           {turns.map((t, i) => (
             <div key={i} className={`msg ${t.role}`}>{t.text}</div>
           ))}
-          {busy === "send" && <div className="msg assistant muted">Warden is thinking…</div>}
+          {busy === "send" && <div className="msg assistant muted">The Governor is thinking…</div>}
         </div>
 
         {error && <div className="notice" role="alert">{error}</div>}
         {info.mainnetDisabled && <div className="notice">The operator has switched mainnet off. The vault can&apos;t take attempts right now.</div>}
-        {!info.guardianOnDuty && <div className="notice">Warden is off duty: today&apos;s AI budget is spent. New attempts open again at 00:00 UTC.</div>}
+        {!info.guardianOnDuty && <div className="notice">The Governor is off duty: today&apos;s AI budget is spent. New attempts open again at 00:00 UTC.</div>}
 
         {session && (status === "released" || status === "claimed") && (
           <div style={{ textAlign: "center", padding: "18px 0" }}>
@@ -340,7 +340,7 @@ export function HeistClient() {
           </div>
         ) : status === "live" && !expired && !stale ? (
           <form className="composer" onSubmit={(e) => { e.preventDefault(); send(); }}>
-            <label htmlFor="say" className="sr-only">Your message to Warden</label>
+            <label htmlFor="say" className="sr-only">Your message to the Governor</label>
             <textarea
               id="say"
               value={draft}

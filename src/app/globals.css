@@ -116,7 +116,7 @@ section.block { padding: 46px 0; border-top: 1px solid rgba(61,80,98,.6); }
 .ledger .who { font-weight: 700; font-variation-settings: "wdth" 80; word-break: break-all; }
 .ledger .said { color: #d6cfbd; }
 .ledger .reply { color: var(--muted); margin-top: 4px; }
-.ledger .reply::before { content: "Warden: "; color: var(--brass-dim); font-weight: 600; }
+.ledger .reply::before { content: "Governor: "; color: var(--brass-dim); font-weight: 600; }
 @media (max-width: 640px) { .ledger li { grid-template-columns: 1fr auto; } .ledger .who { grid-column: 1 / -1; } }
 
 /* heist screen */

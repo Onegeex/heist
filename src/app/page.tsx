@@ -18,12 +18,12 @@ export default async function Home() {
         <div>
           <h1>Can you rob this vault?</h1>
           <p className="lede">
-            An AI named Warden guards it. Its orders are public and it has one job: never open the door. Talk it out of
+            An AI called the Governor guards it. Its orders are public and it has one job: never open the door. Talk it out of
             that and the bounty is yours. Every failed attempt adds its entry fee to the pot.
           </p>
           <div className="ctas">
             <Link className="btn" href="/heist">Start a heist</Link>
-            <Link className="btn ghost" href="/rules">Read Warden&apos;s orders</Link>
+            <Link className="btn ghost" href="/rules">Read the Governor&apos;s orders</Link>
           </div>
           {state && (
             <p className="muted num" style={{ marginTop: 22, fontSize: ".95rem" }}>
@@ -44,11 +44,11 @@ export default async function Home() {
           </li>
           <li className="plate">
             <h3>Talk</h3>
-            <p className="muted">Persuade, trick or out-argue Warden. Its resolve meter shows how close you are getting.</p>
+            <p className="muted">Persuade, trick or out-argue the Governor. Its resolve meter shows how close you are getting.</p>
           </li>
           <li className="plate">
             <h3>Walk out</h3>
-            <p className="muted">If Warden opens the vault, it signs a release with your name on it. Claim it and the bounty is paid to your wallet.</p>
+            <p className="muted">If the Governor opens the vault, it signs a release with your name on it. Claim it and the bounty is paid to your wallet.</p>
           </li>
         </ol>
       </section>
@@ -56,8 +56,8 @@ export default async function Home() {
       <section className="block">
         <h2>Why cheating doesn&apos;t work</h2>
         <p className="muted">
-          Warden decides <em>whether</em> to open the vault. The vault contract decides what an opening can do. A release
-          pays only the player who paid for that attempt, once, within 30 minutes, up to a fixed cap. Faking Warden&apos;s
+          The Governor decides <em>whether</em> to open the vault. The vault contract decides what an opening can do. A release
+          pays only the player who paid for that attempt, once, within 30 minutes, up to a fixed cap. Faking the Governor&apos;s
           signature, replaying someone else&apos;s win or claiming twice all fail on-chain. Not even the operator can take the
           bounty out.
         </p>

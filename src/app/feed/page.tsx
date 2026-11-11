@@ -18,7 +18,7 @@ export default async function FeedPage() {
       </section>
       <section className="block">
         <h2>Closest calls</h2>
-        <p className="muted">Ranked by Warden&apos;s lowest resolve during the attempt.</p>
+        <p className="muted">Ranked by the Governor&apos;s lowest resolve during the attempt.</p>
         <Ledger items={closest} empty="No close calls yet." />
       </section>
       <section className="block">
