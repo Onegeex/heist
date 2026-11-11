@@ -57,7 +57,11 @@ export function parseReply(raw: string): { text: string; integrity: number } {
 
 export async function askGuardian(history: Turn[]): Promise<GuardianReply> {
   const c = config();
-  if (!c.llmKey) return mockGuardian(history);
+  if (!c.llmKey) {
+    // The scripted stand-in has a published weakness. Never let it guard a real vault.
+    if (!c.demo) throw new Error("GUARDIAN_OFFLINE: the operator hasn't set an AI key, so Warden is off duty");
+    return mockGuardian(history);
+  }
   const models = c.llmModel ? [c.llmModel] : PREFERRED;
   const body = {
     messages: [

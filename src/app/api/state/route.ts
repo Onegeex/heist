@@ -20,7 +20,7 @@ export async function GET(req: Request) {
       vault: vaultName(),
       mainnetDisabled: c.network === "mainnet" && c.mainnetDisabled,
       liveGuardian: Boolean(c.llmKey),
-      guardianOnDuty: used < c.dailyAiCalls,
+      guardianOnDuty: used < c.dailyAiCalls && (c.demo || Boolean(c.llmKey)),
       turnsPerAttempt: c.turnsPerAttempt,
       attemptTtlMs: c.attemptTtlMs,
       state,
