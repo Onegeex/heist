@@ -11,7 +11,8 @@
     "test": "tsx --test tests/*.test.ts",
     "vault:test": "cd contract && cargo test",
     "vault:deploy": "bash scripts/deploy-testnet.sh",
-    "keygen": "node scripts/guardian-keygen.mjs"
+    "keygen": "node scripts/guardian-keygen.mjs",
+    "prompt-hashes": "tsx -e \"import {PROMPTS,currentPrompt,sha256B64} from './src/lib/prompts'; for (const f of Object.keys(PROMPTS)) console.log(f, sha256B64(currentPrompt(f as any).prompt))\""
   },
   "dependencies": {
     "@fontsource-variable/archivo": "^5.3.0",

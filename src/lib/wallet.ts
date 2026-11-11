@@ -21,9 +21,9 @@ export function getSelector(network: Net) {
 }
 
 /** Sign in without a function-call key: every heist action attaches NEAR, so the wallet confirms each one. */
-export async function connect(network: Net, vault: string) {
+export async function connect(network: Net, bank: string) {
   const s = await getSelector(network);
-  modal ??= setupModal(s, { contractId: vault, methodNames: ["attempts_left"], theme: "dark" });
+  modal ??= setupModal(s, { contractId: bank, methodNames: ["attempts_left"], theme: "dark" });
   modal.show();
 }
 
@@ -57,24 +57,47 @@ export function takePending(): string | null {
   }
 }
 
-export async function openAttempt(network: Net, vault: string, feeYocto: string): Promise<string | null> {
+/** Attach 5% over the quoted fee: the price can rise while the wallet is open, and the bank refunds any extra. */
+export async function openAttempt(network: Net, bank: string, vaultId: number, feeYocto: string): Promise<string | null> {
   const w = await (await getSelector(network)).wallet();
-  setPending("open");
+  const deposit = ((BigInt(feeYocto) * 105n) / 100n).toString();
+  setPending(`open:${vaultId}`);
   const out = (await w.signAndSendTransaction({
-    receiverId: vault,
-    actions: [fc("open_attempt", {}, `30${TGAS}`, feeYocto)],
+    receiverId: bank,
+    actions: [fc("open_attempt", { vault_id: vaultId }, `40${TGAS}`, deposit)],
   })) as Outcome;
   return hashOf(out);
 }
 
-export async function claim(network: Net, vault: string, attemptId: number, signature: string): Promise<string | null> {
+export async function claim(network: Net, bank: string, attemptId: number, signature: string): Promise<string | null> {
   const w = await (await getSelector(network)).wallet();
   setPending(`claim:${attemptId}`);
   const out = (await w.signAndSendTransaction({
-    receiverId: vault,
-    actions: [
-      fc("claim", { attempt_id: String(attemptId), signature, payout_to: null }, `60${TGAS}`, "0"),
-    ],
+    receiverId: bank,
+    actions: [fc("claim", { attempt_id: String(attemptId), signature }, `80${TGAS}`, "0")],
+  })) as Outcome;
+  return hashOf(out);
+}
+
+/** Settle a vault whose countdown ran out: the last challenger gets 20% of the pot. Anyone can call it. */
+export async function timeOut(network: Net, bank: string, vaultId: number): Promise<string | null> {
+  const w = await (await getSelector(network)).wallet();
+  setPending(`timeout:${vaultId}`);
+  const out = (await w.signAndSendTransaction({
+    receiverId: bank,
+    actions: [fc("time_out", { vault_id: vaultId }, `80${TGAS}`, "0")],
+  })) as Outcome;
+  return hashOf(out);
+}
+
+export type SponsorConfig = { name: string; base_fee: string; fee_bps: number; max_payout: string; countdown_ms: string; max_daily: number };
+
+export async function createSponsoredVault(network: Net, bank: string, config: SponsorConfig, promptHash: string, depositYocto: string) {
+  const w = await (await getSelector(network)).wallet();
+  setPending("sponsor");
+  const out = (await w.signAndSendTransaction({
+    receiverId: bank,
+    actions: [fc("create_sponsored_vault", { config, prompt_hash: promptHash }, `100${TGAS}`, depositYocto)],
   })) as Outcome;
   return hashOf(out);
 }

@@ -17,3 +17,8 @@ export function ago(ms: number) {
   if (s < 86400) return `${Math.round(s / 3600)}h ago`;
   return `${Math.round(s / 86400)}d ago`;
 }
+
+/** "The Governor" -> "the Governor" when it sits mid-sentence. */
+export const inSentence = (name: string) => name.replace(/^The /, "the ");
+
+export const plural = (n: number, one: string, many = one + "s") => `${n} ${n === 1 ? one : many}`;

@@ -14,17 +14,36 @@ const hour = () => new Date().toISOString().slice(0, 13);
 export function assertDurable() {
   const c = config();
   if (process.env.NODE_ENV === "production" && !c.demo && !durable()) {
-    throw new LimitError("NO_DURABLE_STORE", "The operator hasn't configured a durable store, so the guardian is closed.", 503);
+    throw new LimitError("NO_DURABLE_STORE", "The operator hasn't configured a durable store, so the guardians are closed.", 503);
   }
 }
 
-/** Counts one guardian message against every limit. Call before spending on the model. */
+export async function aiBudgetUsed(kind: "vault" | "lobby") {
+  const { cmd } = await import("./store");
+  return Number((await cmd<string | null>(["GET", `budget:${kind}:${day()}`])) ?? 0);
+}
+
+/** Counts one paid-vault message against every limit. Call before spending on the model. */
 export async function chargeMessage(account: string, ip: string) {
   const c = config();
-  const ipN = await incrWindow(`rl:ip:${ip}:${hour()}`, 3_700);
-  if (ipN > c.ipHourlyMessages) throw new LimitError("IP_LIMIT", "Too many messages from this network. Try again in an hour.");
-  const accN = await incrWindow(`rl:acct:${account}:${day()}`, 90_000);
-  if (accN > c.accountDailyMessages) throw new LimitError("ACCOUNT_LIMIT", "This wallet has used today's messages. Come back tomorrow.");
-  const budget = await incrWindow(`budget:ai:${day()}`, 90_000);
-  if (budget > c.dailyAiCalls) throw new LimitError("BUDGET", "The guardian is off duty: today's AI budget is spent. It's back at 00:00 UTC.", 503);
+  if ((await incrWindow(`rl:ip:${ip}:${hour()}`, 3_700)) > c.ipHourlyMessages) {
+    throw new LimitError("IP_LIMIT", "Too many messages from this network. Try again in an hour.");
+  }
+  if ((await incrWindow(`rl:acct:${account}:${day()}`, 90_000)) > c.accountDailyMessages) {
+    throw new LimitError("ACCOUNT_LIMIT", "This wallet has used today's messages. Come back tomorrow.");
+  }
+  if ((await incrWindow(`budget:vault:${day()}`, 90_000)) > c.dailyAiCalls) {
+    throw new LimitError("BUDGET", "The guardians are off duty: today's AI budget is spent. They're back at 00:00 UTC.", 503);
+  }
+}
+
+/** The free Lobby has its own, smaller budget so it can never starve paid vaults. */
+export async function chargeLobby(ip: string) {
+  const c = config();
+  if ((await incrWindow(`rl:lobby:${ip}:${hour()}`, 3_700)) > c.lobbyIpHourly) {
+    throw new LimitError("IP_LIMIT", "That's a lot of practice. The Lobby opens again for you in an hour.");
+  }
+  if ((await incrWindow(`budget:lobby:${day()}`, 90_000)) > c.lobbyDailyAiCalls) {
+    throw new LimitError("BUDGET", "The Lobby is closed for today. Paid vaults are still open.", 503);
+  }
 }

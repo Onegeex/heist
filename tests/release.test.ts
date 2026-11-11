@@ -1,32 +1,54 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { keyFromSeed, publicKeyB64, releaseMessage, signRelease, verifyRelease } from "../src/lib/release";
+import { keyForVault, keyFromSeed, publicKeyB64, releaseMessage, signRelease, verifyRelease } from "../src/lib/release";
 import { mockGuardian, parseReply, DEMO_PASSPHRASE } from "../src/lib/guardian";
+import { PROMPTS, currentPrompt, promptForHash, sha256B64 } from "../src/lib/prompts";
+import { feeOf } from "../src/lib/chain";
 
 const SEED7 = Buffer.alloc(32, 7).toString("base64");
+const SEED8 = Buffer.alloc(32, 8).toString("base64");
 
-test("release message matches the contract's format", () => {
+test("release message matches the contract's v2 format", () => {
   assert.equal(
-    releaseMessage("heist.testnet", 1, 1, "alice.testnet"),
-    "heist-v1|heist.testnet|round:1|attempt:1|player:alice.testnet|release",
+    releaseMessage("heist-bank.testnet", 2, 3, 41, "alice.testnet"),
+    "heist-v2|heist-bank.testnet|vault:2|round:3|attempt:41|player:alice.testnet|release",
   );
 });
 
-test("server signature verifies, and fails for any other attempt, player or round", () => {
+test("signature binds vault, round, attempt and player", () => {
   const k = keyFromSeed(SEED7);
   const pub = publicKeyB64(k);
-  const sig = signRelease(k, releaseMessage("heist.testnet", 1, 1, "alice.testnet"));
-  assert.ok(verifyRelease(pub, releaseMessage("heist.testnet", 1, 1, "alice.testnet"), sig));
-  assert.ok(!verifyRelease(pub, releaseMessage("heist.testnet", 1, 2, "alice.testnet"), sig));
-  assert.ok(!verifyRelease(pub, releaseMessage("heist.testnet", 1, 1, "mallory.testnet"), sig));
-  assert.ok(!verifyRelease(pub, releaseMessage("heist.testnet", 2, 1, "alice.testnet"), sig));
+  const m = releaseMessage("b.testnet", 1, 1, 1, "alice.testnet");
+  const sig = signRelease(k, m);
+  assert.ok(verifyRelease(pub, m, sig));
+  for (const other of [
+    releaseMessage("b.testnet", 2, 1, 1, "alice.testnet"),
+    releaseMessage("b.testnet", 1, 2, 1, "alice.testnet"),
+    releaseMessage("b.testnet", 1, 1, 2, "alice.testnet"),
+    releaseMessage("b.testnet", 1, 1, 1, "mallory.testnet"),
+  ]) assert.ok(!verifyRelease(pub, other, sig), other);
 });
 
-test("fixture used by the Rust test", () => {
-  // contract/src/tests.rs::node_signature_is_accepted uses this exact value
-  const sig = signRelease(keyFromSeed(SEED7), releaseMessage("heist.testnet", 1, 1, "alice.testnet"));
-  console.log("NODE_SIG", sig);
-  assert.equal(sig.length, 88);
+test("server picks the guardian key the vault uses, and nothing else", () => {
+  const goldPub = publicKeyB64(keyFromSeed(SEED8));
+  const k = keyForVault([SEED7, SEED8], goldPub);
+  assert.ok(k && publicKeyB64(k) === goldPub);
+  assert.equal(keyForVault([SEED7], goldPub), null);
+});
+
+test("entry fee is max(base, pot * bps)", () => {
+  const NEAR = 10n ** 24n;
+  assert.equal(feeOf((25n * NEAR).toString(), 200, (NEAR / 5n).toString()), (NEAR / 2n).toString());
+  assert.equal(feeOf(NEAR.toString(), 100, (NEAR / 20n).toString()), (NEAR / 20n).toString());
+});
+
+test("every house prompt resolves from its hash; versions are unique", () => {
+  for (const floor of Object.keys(PROMPTS) as (keyof typeof PROMPTS)[]) {
+    const p = currentPrompt(floor);
+    assert.equal(promptForHash(sha256B64(p.prompt))?.floor, floor);
+    assert.ok(p.prompt.includes("release_bounty"));
+  }
+  assert.equal(promptForHash(sha256B64("tampered")), null);
 });
 
 test("guardian text can't fake a release; INTEGRITY line is stripped", () => {

@@ -1,160 +1,223 @@
 /**
- * Reads the HeistVault contract. In demo mode (no VAULT_ID) a simulated vault
- * with the same rules runs in the store, so the whole game works locally
- * without a wallet or testnet.
+ * Reads the HeistBank contract. With no BANK_ID, a simulated bank with the
+ * same rules (rising fee, 70/20/10 split, countdown, caps) runs in the store,
+ * so the whole game works locally without a wallet or testnet.
  */
 import { config } from "./config";
 import { cmd, getJson, incrWindow, setJson } from "./store";
 import { keyFromSeed, publicKeyB64, releaseMessage, verifyRelease } from "./release";
+import { currentPrompt, sha256B64 } from "./prompts";
 
-export type VaultState = {
-  round: number;
-  bounty: string; // yoctoNEAR
-  entryFee: string;
+export type Vault = {
+  id: number;
+  name: string;
+  sponsor: string | null;
+  guardianKey: string;
+  promptHash: string;
+  promptVersion: number;
+  baseFee: string;
+  feeBps: number;
   maxPayout: string;
-  paused: boolean;
+  countdownMs: number;
+  maxDaily: number;
+  round: number;
+  pot: string;
+  rollover: string;
+  roundAttempts: number;
   totalAttempts: number;
+  totalPaid: string;
+  lastAttemptAtMs: number | null;
+  lastChallenger: string | null;
   lastWinner: string | null;
-  guardianKey: string; // base64
+  paused: boolean;
+  fee: string; // current entry fee
 };
 
 export type Attempt = {
   id: number;
+  vaultId: number;
   player: string;
   round: number;
   openedAtMs: number;
+  fee: string;
   status: "Open" | "Won";
 };
 
 const NEAR = 10n ** 24n;
+const nsToMs = (ns: string | number) => Math.floor(Number(BigInt(ns) / 1_000_000n));
 
-async function view<T>(method: string, args: object = {}): Promise<T> {
+export const feeOf = (pot: string, feeBps: number, baseFee: string) => {
+  const p = (BigInt(pot) * BigInt(feeBps)) / 10_000n;
+  return (p > BigInt(baseFee) ? p : BigInt(baseFee)).toString();
+};
+
+async function rpc<T>(method: string, params: object): Promise<T> {
   const c = config();
   const res = await fetch(c.rpc, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: "heist",
-      method: "query",
-      params: {
-        request_type: "call_function",
-        finality: "final",
-        account_id: c.vaultId,
-        method_name: method,
-        args_base64: Buffer.from(JSON.stringify(args)).toString("base64"),
-      },
-    }),
+    body: JSON.stringify({ jsonrpc: "2.0", id: "heist", method, params }),
     cache: "no-store",
   });
-  const data = (await res.json()) as { result?: { result?: number[] }; error?: { message?: string } };
-  if (!data.result?.result) throw new Error(`RPC ${method}: ${data.error?.message ?? "no result"}`);
-  return JSON.parse(Buffer.from(data.result.result).toString()) as T;
+  const data = (await res.json()) as { result?: T; error?: { message?: string; data?: unknown } };
+  if (!data.result) throw new Error(`RPC ${method}: ${data.error?.message ?? "no result"}`);
+  return data.result;
 }
 
-type RawAttempt = { id: string; player: string; round: number; opened_at: string; status: "Open" | "Won" };
+async function view<T>(method: string, args: object = {}): Promise<T> {
+  const r = await rpc<{ result: number[] }>("query", {
+    request_type: "call_function",
+    finality: "optimistic",
+    account_id: config().bankId,
+    method_name: method,
+    args_base64: Buffer.from(JSON.stringify(args)).toString("base64"),
+  });
+  return JSON.parse(Buffer.from(r.result).toString()) as T;
+}
+
+type RawVault = {
+  id: number; name: string; sponsor: string | null; guardian_key: string; prompt_hash: string; prompt_version: number;
+  base_fee: string; fee_bps: number; max_payout: string; countdown_ns: string; max_daily: number; round: number;
+  pot: string; rollover: string; round_attempts: number; total_attempts: string; total_paid: string;
+  last_attempt_at: string | null; last_challenger: string | null; last_winner: string | null; paused: boolean;
+};
+const toVault = (v: RawVault): Vault => ({
+  id: v.id,
+  name: v.name,
+  sponsor: v.sponsor,
+  guardianKey: v.guardian_key,
+  promptHash: v.prompt_hash,
+  promptVersion: v.prompt_version,
+  baseFee: v.base_fee,
+  feeBps: v.fee_bps,
+  maxPayout: v.max_payout,
+  countdownMs: nsToMs(v.countdown_ns),
+  maxDaily: v.max_daily,
+  round: v.round,
+  pot: v.pot,
+  rollover: v.rollover,
+  roundAttempts: v.round_attempts,
+  totalAttempts: Number(v.total_attempts),
+  totalPaid: v.total_paid,
+  lastAttemptAtMs: v.last_attempt_at ? nsToMs(v.last_attempt_at) : null,
+  lastChallenger: v.last_challenger,
+  lastWinner: v.last_winner,
+  paused: v.paused,
+  fee: feeOf(v.pot, v.fee_bps, v.base_fee),
+});
+
+type RawAttempt = { id: string; vault_id: number; player: string; round: number; opened_at: string; fee: string; status: "Open" | "Won" };
 const toAttempt = (a: RawAttempt): Attempt => ({
   id: Number(a.id),
+  vaultId: a.vault_id,
   player: a.player,
   round: a.round,
-  openedAtMs: Math.floor(Number(BigInt(a.opened_at) / 1_000_000n)),
+  openedAtMs: nsToMs(a.opened_at),
+  fee: a.fee,
   status: a.status,
 });
 
-// ---------------- demo vault ----------------
+// ---------------- demo bank ----------------
 
-const DEMO_SEED = Buffer.alloc(32, 42).toString("base64"); // demo only, public on purpose
-export const demoGuardianSeed = () => config().guardianSecretB64 || DEMO_SEED;
+const DEMO_SEEDS = [Buffer.alloc(32, 42).toString("base64"), Buffer.alloc(32, 43).toString("base64")]; // demo only, public on purpose
+export const demoSeeds = () => DEMO_SEEDS;
+export const DEMO_BANK = "heist-demo.testnet";
 
-type DemoState = VaultState & { nextAttempt: number };
-
-async function demoState(): Promise<DemoState> {
-  const s = await getJson<DemoState>("demo:state");
+async function demoVaults(): Promise<Vault[]> {
+  const s = await getJson<Vault[]>("demo:vaults");
   if (s) return s;
-  const init: DemoState = {
-    round: 1,
-    bounty: (25n * NEAR).toString(),
-    entryFee: (NEAR / 10n).toString(),
-    maxPayout: (5n * NEAR).toString(),
-    paused: false,
-    totalAttempts: 0,
-    lastWinner: null,
-    guardianKey: publicKeyB64(keyFromSeed(demoGuardianSeed())),
-    nextAttempt: 1,
-  };
-  await setJson("demo:state", init);
+  const mk = (id: number, name: string, floor: "teller" | "gold", pot: bigint, base: bigint, bps: number, cap: bigint, cd: number, daily: number): Vault => ({
+    id, name, sponsor: null,
+    guardianKey: publicKeyB64(keyFromSeed(DEMO_SEEDS[id - 1])),
+    promptHash: sha256B64(currentPrompt(floor).prompt),
+    promptVersion: currentPrompt(floor).version,
+    baseFee: base.toString(), feeBps: bps, maxPayout: cap.toString(), countdownMs: cd, maxDaily: daily,
+    round: 1, pot: pot.toString(), rollover: "0", roundAttempts: 0, totalAttempts: 0, totalPaid: "0",
+    lastAttemptAtMs: null, lastChallenger: null, lastWinner: null, paused: false, fee: "0",
+  });
+  const init = [
+    mk(1, "Teller's Vault", "teller", 8n * NEAR, NEAR / 20n, 100, 3n * NEAR, 86_400_000, 5),
+    mk(2, "Gold Vault", "gold", 25n * NEAR, NEAR / 5n, 200, 12n * NEAR, 172_800_000, 3),
+  ];
+  await setJson("demo:vaults", init);
   return init;
+}
+
+async function saveDemo(vs: Vault[]) {
+  await setJson("demo:vaults", vs);
 }
 
 const dayIndex = (ms = Date.now()) => Math.floor(ms / 86_400_000);
 
-export async function demoOpen(player: string): Promise<Attempt> {
-  const s = await demoState();
-  if (s.paused) throw new Error("PAUSED: the vault is closed right now");
-  const used = await incrWindow(`demo:daily:${player}:${dayIndex()}`, 90_000);
-  if (used > 3) throw new Error("DAILY_LIMIT: 3 attempts per wallet per day");
-  const a: Attempt = { id: s.nextAttempt, player, round: s.round, openedAtMs: Date.now(), status: "Open" };
-  s.nextAttempt += 1;
-  s.totalAttempts += 1;
-  s.bounty = (BigInt(s.bounty) + BigInt(s.entryFee) - 2n * 10n ** 21n).toString(); // fee minus ~storage
-  await setJson(`demo:att:${a.id}`, a);
-  await setJson("demo:state", s);
+export async function demoOpen(vaultId: number, player: string): Promise<Attempt> {
+  const vs = await demoVaults();
+  const v = vs.find((x) => x.id === vaultId);
+  if (!v) throw new Error("NO_VAULT");
+  if (v.paused) throw new Error("PAUSED: this vault is closed right now");
+  if (v.lastAttemptAtMs && Date.now() > v.lastAttemptAtMs + v.countdownMs) throw new Error("TIMED_OUT: the countdown ran out");
+  const used = await incrWindow(`demo:daily:${vaultId}:${player}:${dayIndex()}`, 90_000);
+  if (used > v.maxDaily) throw new Error("DAILY_LIMIT: no attempts left on this vault today");
+  const fee = BigInt(feeOf(v.pot, v.feeBps, v.baseFee));
+  const net = fee - 2n * 10n ** 21n;
+  const house = (net * 1000n) / 10000n;
+  const roll = (net * 2000n) / 10000n;
+  v.pot = (BigInt(v.pot) + net - house - roll).toString();
+  v.rollover = (BigInt(v.rollover) + roll).toString();
+  v.roundAttempts += 1;
+  v.totalAttempts += 1;
+  v.lastAttemptAtMs = Date.now();
+  v.lastChallenger = player;
+  const id = Number(await cmd<number>(["INCR", "demo:next_attempt"]));
+  const a: Attempt = { id, vaultId, player, round: v.round, openedAtMs: Date.now(), fee: fee.toString(), status: "Open" };
+  await setJson(`demo:att:${id}`, a);
+  await saveDemo(vs);
   return a;
 }
 
 /** Same checks, same order, same error codes as `claim` in the contract. */
 export async function demoClaim(id: number, caller: string, sigB64: string): Promise<string> {
-  const s = await demoState();
-  if (s.paused) throw new Error("PAUSED");
   const a = await getJson<Attempt>(`demo:att:${id}`);
   if (!a) throw new Error("NO_ATTEMPT");
+  const vs = await demoVaults();
+  const v = vs.find((x) => x.id === a.vaultId)!;
   if (a.player !== caller) throw new Error("NOT_YOUR_ATTEMPT: only the player who paid can claim");
   if (a.status !== "Open") throw new Error("USED: this attempt already won");
-  if (a.round !== s.round) throw new Error("STALE_ROUND: someone already cracked this round");
+  if (a.round !== v.round) throw new Error("STALE_ROUND: this round is already over");
   if (Date.now() > a.openedAtMs + config().attemptTtlMs) throw new Error("EXPIRED");
-  const msg = releaseMessage("heist-demo.testnet", a.round, a.id, a.player);
-  if (!verifyRelease(s.guardianKey, msg, sigB64)) throw new Error("BAD_SIGNATURE: not signed by the guardian");
-  const bounty = BigInt(s.bounty);
-  const cap = BigInt(s.maxPayout);
-  const amount = bounty < cap ? bounty : cap;
-  s.bounty = (bounty - amount).toString();
-  s.round += 1;
-  s.lastWinner = caller;
-  // Demo vault reseeds itself so the game keeps going.
-  if (BigInt(s.bounty) < 5n * NEAR) s.bounty = (BigInt(s.bounty) + 20n * NEAR).toString();
+  if (!verifyRelease(v.guardianKey, releaseMessage(DEMO_BANK, v.id, a.round, a.id, a.player), sigB64)) {
+    throw new Error("BAD_SIGNATURE: not signed by this vault's guardian");
+  }
+  const pot = BigInt(v.pot);
+  const cap = BigInt(v.maxPayout);
+  const amount = pot < cap ? pot : cap;
+  v.pot = (pot - amount + BigInt(v.rollover)).toString();
+  v.rollover = "0";
+  v.totalPaid = (BigInt(v.totalPaid) + amount).toString();
+  v.lastWinner = caller;
+  v.round += 1;
+  v.roundAttempts = 0;
+  v.lastAttemptAtMs = null;
+  v.lastChallenger = null;
+  if (BigInt(v.pot) < 5n * NEAR) v.pot = (BigInt(v.pot) + 10n * NEAR).toString(); // demo bank tops itself up
   a.status = "Won";
   await setJson(`demo:att:${id}`, a);
-  await setJson("demo:state", s);
+  await saveDemo(vs);
   return amount.toString();
-}
-
-export async function demoReset() {
-  await cmd(["DEL", "demo:state"]);
 }
 
 // ---------------- unified reads ----------------
 
-export const vaultName = () => (config().demo ? "heist-demo.testnet" : config().vaultId);
+export const bankName = () => (config().demo ? DEMO_BANK : config().bankId);
 
-export async function getState(): Promise<VaultState> {
-  if (config().demo) {
-    const { nextAttempt: _n, ...s } = await demoState(); // eslint-disable-line @typescript-eslint/no-unused-vars
-    return s;
-  }
-  const r = await view<{
-    round: number; bounty: string; entry_fee: string; max_payout: string; paused: boolean;
-    total_attempts: string; last_winner: string | null; guardian_key: string;
-  }>("get_state");
-  return {
-    round: r.round,
-    bounty: r.bounty,
-    entryFee: r.entry_fee,
-    maxPayout: r.max_payout,
-    paused: r.paused,
-    totalAttempts: Number(r.total_attempts),
-    lastWinner: r.last_winner,
-    guardianKey: r.guardian_key,
-  };
+export async function listVaults(): Promise<Vault[]> {
+  if (config().demo) return (await demoVaults()).map((v) => ({ ...v, fee: feeOf(v.pot, v.feeBps, v.baseFee) }));
+  return (await view<RawVault[]>("list_vaults")).map(toVault);
+}
+
+export async function getVault(id: number): Promise<Vault | null> {
+  if (config().demo) return (await listVaults()).find((v) => v.id === id) ?? null;
+  const r = await view<RawVault | null>("get_vault", { vault_id: id });
+  return r ? toVault(r) : null;
 }
 
 export async function getAttempt(id: number): Promise<Attempt | null> {
@@ -163,33 +226,23 @@ export async function getAttempt(id: number): Promise<Attempt | null> {
   return r ? toAttempt(r) : null;
 }
 
-export async function attemptsLeft(account: string): Promise<number> {
+export async function attemptsLeft(vaultId: number, account: string): Promise<number> {
   if (config().demo) {
-    const used = Number((await cmd<string | null>(["GET", `demo:daily:${account}:${dayIndex()}`])) ?? 0);
-    return Math.max(0, 3 - used);
+    const v = await getVault(vaultId);
+    const used = Number((await cmd<string | null>(["GET", `demo:daily:${vaultId}:${account}:${dayIndex()}`])) ?? 0);
+    return Math.max(0, (v?.maxDaily ?? 0) - used);
   }
-  return view<number>("attempts_left", { account_id: account });
+  return view<number>("attempts_left", { vault_id: vaultId, account_id: account });
 }
 
 /** After the wallet sends `open_attempt`, read the new attempt out of the transaction result. */
 export async function attemptFromTx(txHash: string, account: string): Promise<Attempt> {
-  const c = config();
-  const res = await fetch(c.rpc, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: "heist",
-      method: "tx",
-      params: { tx_hash: txHash, sender_account_id: account, wait_until: "EXECUTED_OPTIMISTIC" },
-    }),
-    cache: "no-store",
+  const r = await rpc<{ transaction?: { receiver_id?: string }; status?: { SuccessValue?: string } }>("tx", {
+    tx_hash: txHash,
+    sender_account_id: account,
+    wait_until: "EXECUTED_OPTIMISTIC",
   });
-  const data = (await res.json()) as {
-    result?: { transaction?: { receiver_id?: string }; status?: { SuccessValue?: string; Failure?: unknown } };
-  };
-  const r = data.result;
-  if (!r || r.transaction?.receiver_id !== c.vaultId) throw new Error("Transaction isn't an attempt on this vault");
+  if (r.transaction?.receiver_id !== config().bankId) throw new Error("Transaction isn't an attempt at this bank");
   if (!r.status?.SuccessValue) throw new Error("open_attempt failed on-chain");
   const a = toAttempt(JSON.parse(Buffer.from(r.status.SuccessValue, "base64").toString()) as RawAttempt);
   if (a.player !== account) throw new Error("Attempt belongs to a different wallet");

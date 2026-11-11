@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // share-card fonts are read from disk at request time
+  outputFileTracingIncludes: { "/api/card/[key]": ["./src/assets/**"] },
   async headers() {
     return [
       {

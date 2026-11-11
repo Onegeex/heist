@@ -4,9 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const links = [
-  ["/heist", "Play"],
+  ["/lobby", "Lobby"],
   ["/feed", "Attempts"],
   ["/rules", "Rules"],
+  ["/sponsor", "Sponsor"],
 ] as const;
 
 export function Nav() {

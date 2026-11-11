@@ -116,7 +116,7 @@ section.block { padding: 46px 0; border-top: 1px solid rgba(61,80,98,.6); }
 .ledger .who { font-weight: 700; font-variation-settings: "wdth" 80; word-break: break-all; }
 .ledger .said { color: #d6cfbd; }
 .ledger .reply { color: var(--muted); margin-top: 4px; }
-.ledger .reply::before { content: "Governor: "; color: var(--brass-dim); font-weight: 600; }
+.ledger .reply::before { content: attr(data-guardian) ": "; color: var(--brass-dim); font-weight: 600; }
 @media (max-width: 640px) { .ledger li { grid-template-columns: 1fr auto; } .ledger .who { grid-column: 1 / -1; } }
 
 /* heist screen */
@@ -148,3 +148,23 @@ footer.site { padding: 36px 0 50px; color: var(--muted); font-size: .92rem; bord
 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .field { display: block; width: 100%; background: #16202a; color: var(--ivory); border: 1px solid var(--rivet); border-radius: 4px; padding: 9px 11px; font: inherit; margin: 4px 0 12px; }
+
+/* the Bank: floors */
+.floors { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; margin-top: 18px; }
+.floor { display: flex; flex-direction: column; gap: 10px; }
+.floor h3 { font-size: 2.1rem; margin: 0; }
+.floor .btn { align-self: flex-start; margin-top: auto; }
+.floor-tag { font-size: .85rem; color: var(--brass); font-weight: 600; }
+.floor-pot .display { font-size: 2.8rem; color: var(--brass); }
+.floor-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 0; }
+.floor-stats dt { font-size: .8rem; color: var(--muted); }
+.floor-stats dd { margin: 0; font-weight: 600; }
+.floor-gold { border-color: var(--brass-dim); background: linear-gradient(180deg, #33402b 0%, var(--plate-2) 22%, var(--plate) 100%); }
+.floor-lobby { background: linear-gradient(180deg, var(--plate), #202c37); }
+.floor-sponsored { border-style: dashed; }
+.rules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px; }
+.rules-grid h3 { font-size: 1.5rem; margin-bottom: 6px; }
+.sponsor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+.sponsor-grid label { font-size: .92rem; color: var(--muted); }
+.sponsor-grid textarea.field { font: 15px/1.5 var(--body); }
+@media (max-width: 700px) { .sponsor-grid { grid-template-columns: 1fr; } }

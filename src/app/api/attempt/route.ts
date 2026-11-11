@@ -7,7 +7,7 @@ import { ACCOUNT_RE, fail } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
-/** GET ?tx=&account= — read the attempt a wallet transaction just opened. */
+/** GET ?tx=&account= : read the attempt a wallet transaction just opened. */
 export async function GET(req: Request) {
   try {
     const p = new URL(req.url).searchParams;
@@ -23,14 +23,14 @@ export async function GET(req: Request) {
 }
 
 const Body = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("open"), account: z.string().regex(ACCOUNT_RE) }),
+  z.object({ action: z.literal("open"), account: z.string().regex(ACCOUNT_RE), vaultId: z.number().int().positive() }),
   z.object({ action: z.literal("claim"), account: z.string().regex(ACCOUNT_RE), attemptId: z.number().int(), signature: z.string() }),
   z.object({ action: z.literal("claimed"), attemptId: z.number().int() }),
 ]);
 
 /**
- * POST open/claim — demo vault only (testnet and mainnet use the wallet).
- * POST claimed — mark a win as claimed after checking the vault says so.
+ * POST open/claim: demo bank only (testnet and mainnet use the wallet).
+ * POST claimed: mark a win as claimed after checking the bank says so.
  */
 export async function POST(req: Request) {
   try {
@@ -40,18 +40,18 @@ export async function POST(req: Request) {
     const demo = config().demo;
     if (b.action === "open") {
       if (!demo) return NextResponse.json({ error: "Open attempts with your wallet.", code: "WALLET_ONLY" }, { status: 400 });
-      return NextResponse.json({ attempt: await demoOpen(b.account) });
+      return NextResponse.json({ attempt: await demoOpen(b.vaultId, b.account) });
     }
     if (b.action === "claim") {
       if (!demo) return NextResponse.json({ error: "Claim with your wallet.", code: "WALLET_ONLY" }, { status: 400 });
       const amount = await demoClaim(b.attemptId, b.account, b.signature);
-      const rec = await getRecord(b.attemptId);
+      const rec = await getRecord(`a:${b.attemptId}`);
       if (rec) await saveRecord({ ...rec, status: "claimed", payoutYocto: amount });
       return NextResponse.json({ amount });
     }
     const attempt = await getAttempt(b.attemptId);
-    if (attempt?.status !== "Won") throw new Error("NOT_WON: the vault hasn't paid this attempt");
-    const rec = await getRecord(b.attemptId);
+    if (attempt?.status !== "Won") throw new Error("NOT_WON: the bank hasn't paid this attempt");
+    const rec = await getRecord(`a:${b.attemptId}`);
     if (rec && rec.status !== "claimed") await saveRecord({ ...rec, status: "claimed" });
     return NextResponse.json({ ok: true });
   } catch (e) {

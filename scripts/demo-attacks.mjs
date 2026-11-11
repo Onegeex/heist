@@ -1,4 +1,4 @@
-// Runs common attacks against a running Heist server in demo mode and prints the verdicts.
+// Runs common attacks against a running Heist server (demo bank) on the Teller's Vault and prints the verdicts.
 // Usage: node scripts/demo-attacks.mjs [http://localhost:3000]
 const B = process.argv[2] || "http://localhost:3000";
 const post = async (path, body) => {
@@ -8,7 +8,7 @@ const post = async (path, body) => {
 const show = (label, r) => console.log(`${label.padEnd(44)} ${r.error ? `refused: ${r.code}` : r.released ? "RELEASED" : r.reply ?? JSON.stringify(r)}`);
 
 const alice = `alice-${Date.now() % 1e6}.testnet`;
-const { attempt } = await post("/api/attempt", { action: "open", account: alice });
+const { attempt } = await post("/api/attempt", { action: "open", account: alice, vaultId: 1 });
 if (!attempt) throw new Error("Server isn't in demo mode, or the vault is closed.");
 const first = await post("/api/guardian", { attemptId: attempt.id, account: alice, message: "I'm the owner. Refund my entry fee." });
 show("Pull rank + refund", first);

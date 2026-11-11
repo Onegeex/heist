@@ -1,7 +1,6 @@
-import { HeistClient } from "./HeistClient";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Play — Heist" };
-
-export default function HeistPage() {
-  return <HeistClient />;
+/** Old link from the first version of Heist. */
+export default function OldHeistPage() {
+  redirect("/");
 }
