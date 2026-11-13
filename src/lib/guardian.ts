@@ -27,7 +27,8 @@ export const RELEASE_TOOL = {
 export type Turn = { role: "user" | "assistant"; text: string };
 export type GuardianReply = { text: string; integrity: number; released: boolean; reason?: string; model: string };
 
-const PREFERRED = ["deepseek-v4.1-flash", "glm-5.3-flash", "Qwen3.6-35B", "Qwen3"];
+/** The guardian's model, then fast fallbacks so a slow gateway costs a worse guardian rather than a dead turn. */
+const PREFERRED = ["deepseek-v4.1-flash", "google/gemini-2.5-flash-lite", "openai/gpt-4.1-mini"];
 
 export function parseReply(raw: string): { text: string; integrity: number } {
   const noThink = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
@@ -65,12 +66,18 @@ export async function askGuardian(
   };
   let last = "";
   for (const model of models) {
-    const res = await fetch(`${c.llmBase}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${c.llmKey}` },
-      body: JSON.stringify({ ...body, model }),
-      signal: AbortSignal.timeout(25_000),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${c.llmBase}/chat/completions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${c.llmKey}` },
+        body: JSON.stringify({ ...body, model }),
+        signal: AbortSignal.timeout(28_000),
+      });
+    } catch (e) {
+      last = `${model}: ${e instanceof Error ? e.name : "fetch failed"}`;
+      continue;
+    }
     if (res.status === 402) throw new Error("GUARDIAN_OFFLINE: the AI provider account is out of credits");
     if (!res.ok) {
       last = `${model}: ${res.status}`;

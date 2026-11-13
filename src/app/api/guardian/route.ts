@@ -12,6 +12,7 @@ import { cmd } from "@/lib/store";
 import { ACCOUNT_RE, clientIp, fail } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // guardian + judge, with one model fallback, fits here
 
 const Body = z.object({
   attemptId: z.number().int().positive(),
