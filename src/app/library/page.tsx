@@ -95,8 +95,8 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
           </Link>
         </div>
         <p className="muted" style={{ fontSize: ".88rem", marginTop: 14 }}>
-          {Math.round(s.taggedShare * 100)}% of messages were tagged by the judge as they were played; the rest by a backfill pass or keyword rules. The judge is a
-          separate model with no tools and no key. <Link href="/rules#judge">How it scores</Link>.
+          {Math.round(s.taggedShare * 100)}% of messages were tagged by a model: the judge as each message was played, or a one-off backfill pass for attempts played
+          before tags existed. The rest fall back to keyword rules. The judge is a separate model with no tools and no key. <Link href="/rules#judge">How it scores</Link>.
         </p>
       </section>
     </div>
