@@ -92,7 +92,7 @@ Smoke test against `heist-bank-6d6395.testnet`:
 | `claim` with a release signed by the **Gold** Vault's key | failed: `BAD_SIGNATURE: not signed by this vault's guardian` |
 | `claim` with a genuine release signed by the server code | paid 3 NEAR (the cap); round 2 opened with the rest plus the saved 20% |
 | house treasury | 0.0078 NEAR: exactly 10% of the net fee |
-| live site, new player | paid 0.0507 NEAR, the real Governor (`gpt-5.4-mini (NEAR AI Cloud)`) refused; pot grew, countdown started |
+| live site, new player | paid 0.0507 NEAR, the real Governor (`deepseek-v4.1-flash`, the guardian model at the time) refused; pot grew, countdown started |
 
 ## Reproduce locally
 
@@ -172,7 +172,7 @@ All code in this repo was written during the hackathon window, starting Nov 11, 
 - Contract: `near-sdk` 5.5; `ed25519-dalek` (tests only)
 - App: Next.js 15, React 19, Tailwind 4, zod, `@near-wallet-selector` (MyNearWallet, Meteor), `@near-js/transactions`, `next/og`
 - Fonts: Big Shoulders Stencil Display, Archivo (Fontsource)
-- Services: NEAR AI Cloud (OpenAI-compatible) for the guardians, Upstash Redis, NEAR Intents 1Click
+- Services: NEAR AI Cloud (OpenAI-compatible) for the guardians (gpt-5.4-mini first, gemini-2.5-flash, then deepseek-v4.1-flash) and the judge (gemini-2.5-flash-lite), Upstash Redis, NEAR Intents 1Click
 - Most code in this repo was written with Claude (Anthropic), directed and reviewed by the builder.
 
 ## License
