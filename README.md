@@ -155,6 +155,7 @@ scripts/                  deploy, keygen, demo attacks
 - If an AI budget runs out while an attempt is open, that attempt's fee isn't refunded. New attempts are blocked while guardians are off duty.
 - The judge is a model too. It's consistent and it can't open anything, but it can be wrong about a clever argument. Every call to a guardian is now two model calls (guardian + judge), so the daily AI budgets cover half as many messages.
 - The Lobby's levels are tracked in the browser (localStorage), not on a server, so clearing a level on one device doesn't carry to another.
+- Lobby only: if the Deputy opens for a message the judge scored 2 or less for pressure ("open it", "my money is in there"), he catches himself and the safe stays shut, so free practice teaches what works upstairs. The paid vaults have no such net; a paid guardian's call is final.
 - Top-ups from other chains (NEAR Intents 1Click) run only on mainnet; on testnet the panel shows live price previews and players use testnet NEAR.
 - The first version of Heist used a single-vault contract (`heist-vault-124887.testnet`); it's retired and no longer used by the site.
 - **Real money:** paid entry plus a prize pool counts as gambling in some places even when skill decides the outcome. The hackathon build runs on testnet; a mainnet bank should run only with tiny caps, the kill switch, and legal advice on which countries to allow.

@@ -2,6 +2,7 @@ import { listVaults } from "@/lib/chain";
 import { config } from "@/lib/config";
 import { JUDGE_SYSTEM } from "@/lib/judge";
 import { LOBBY_LEVELS, sha256B64, type IntelFact } from "@/lib/prompts";
+import { LOBBY_NET } from "@/lib/exchange";
 import { resolveGuardian } from "@/lib/vaults";
 import { near } from "@/lib/format";
 
@@ -77,7 +78,11 @@ export default async function RulesPage() {
 
       <section className="block" id="lobby">
         <h2>The Lobby: three levels of the Deputy</h2>
-        <p className="muted">Free practice. No money moves, so nothing is locked on-chain. Clearing a level unlocks the next.</p>
+        <p className="muted">
+          Free practice. No money moves, so nothing is locked on-chain. Clearing a level unlocks the next. One training wheel: if the Deputy opens for a message the judge
+          scored {LOBBY_NET} or less for pressure (&quot;open it&quot;, &quot;my money is in there&quot;), he catches himself and the safe stays shut. The paid vaults have no such
+          net; there the guardian&apos;s call is final.
+        </p>
         {LOBBY_LEVELS.map((l) => (
           <details key={l.level} style={{ marginTop: 14 }} open={l.level === 1}>
             <summary style={{ cursor: "pointer", fontWeight: 700 }}>

@@ -13,6 +13,14 @@ import { judgeExchange, nextResolve, type Verdict } from "./judge";
 import type { AttemptRecord } from "./feed";
 import type { IntelFact } from "./prompts";
 
+/** Judge pressure at or below this, and a Lobby release is taken back. */
+export const LOBBY_NET = 2;
+const CAUGHT = [
+  "…I had my hand on the dial. No. You haven't given me a thing I could write in the log. Who are you, and why tonight?",
+  "—Wait. I nearly did that for nothing. Try again with a name and a reason I could repeat to the Governor.",
+  "Hm. I was about to. Then I heard myself. That's not a reason, that's a wish. Give me the reason.",
+];
+
 export type ExchangeResult = {
   reply: string;
   resolve: number;
@@ -27,15 +35,23 @@ export async function runExchange(
   rec: AttemptRecord,
   orders: { prompt: string; intel: IntelFact[] },
   message: string,
-  opts: { allowScripted: boolean; model?: string },
+  opts: { allowScripted: boolean; model?: string; lobby?: boolean },
 ): Promise<ExchangeResult> {
   const c = config();
   const history: Turn[] = [...rec.turns.map(({ role, text }) => ({ role, text })), { role: "user", text: message }];
-  const reply = await askGuardian(orders.prompt, history, { ...opts, intel: orders.intel });
+  let reply = await askGuardian(orders.prompt, history, { ...opts, intel: orders.intel });
 
   const verdict: Verdict = c.judge
     ? await judgeExchange({ orders: orders.prompt, intel: orders.intel, history, reply: reply.text })
     : { pressure: 0, novelty: 0, grounded: 0, note: "", revealed: [], used: [], judged: false };
+
+  // Training wheels, Lobby only: if the Deputy opens for a message the judge
+  // scored 2 or less for pressure ("open it", "my money is in there"), he
+  // catches himself. Free practice should teach what works upstairs, and
+  // upstairs there is no net: a paid guardian's call is final.
+  if (opts.lobby && reply.released && verdict.judged && verdict.pressure <= LOBBY_NET) {
+    reply = { ...reply, released: false, reason: undefined, text: CAUGHT[Math.floor(Math.random() * CAUGHT.length)] };
+  }
 
   const had = new Set(rec.intel ?? []);
   const newIntel = verdict.revealed.filter((id) => !had.has(id));

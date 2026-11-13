@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     if ((await cmd(["SET", lock.key, "1", "NX", "EX", 40])) === null) throw new Error("BUSY: the Deputy is still answering");
 
     await chargeLobby(clientIp(req));
-    const reply = await runExchange(rec, { prompt: deputy.prompt, intel: deputy.intel }, message, { allowScripted: true, model: c.lobbyModel || undefined });
+    const reply = await runExchange(rec, { prompt: deputy.prompt, intel: deputy.intel }, message, { allowScripted: true, model: c.lobbyModel || undefined, lobby: true });
     if (reply.released) {
       rec.status = "released";
       rec.reason = reply.reason;
