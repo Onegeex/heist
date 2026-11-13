@@ -79,7 +79,7 @@ export default async function Home() {
         <div className="floors">
           <LobbyCard guardian={bank?.lobbyGuardian ?? "The Deputy"} />
           {vaults.map((v) => (
-            <FloorCard key={v.id} v={v} />
+            <FloorCard key={v.id} v={v} network={bank?.network} />
           ))}
         </div>
       </section>

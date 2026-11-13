@@ -467,3 +467,7 @@ button.card-inner:focus-visible .face { outline: 3px solid var(--brass); outline
   .chips .chip-btn:nth-child(2) { animation-delay: .08s; }
   .chips .chip-btn:nth-child(3) { animation-delay: .16s; }
 }
+
+/* a vault that has actually been cracked: the contract paid, and the card says so */
+.cracked { font-size: .88rem; color: var(--ivory); margin: 2px 0 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cracked a { color: var(--brass); }

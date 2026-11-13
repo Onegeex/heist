@@ -118,19 +118,26 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
       try {
         const b = await api<BankSnapshot>("/api/bank");
         setBank(b);
+        // Show the room first: spectators and readers never wait on a wallet.
+        await refresh(null);
         let acct: string | null;
         if (b.demo) acct = demoAccount();
         else {
-          acct = await wallet.currentAccount(b.network);
-          const sel = await wallet.getSelector(b.network);
-          sel.store.observable.subscribe((st) => {
-            const a = st.accounts.find((x) => x.active)?.accountId ?? null;
-            setAccount(a);
-            if (a) refresh(a).catch(() => {});
-          });
+          // The wallet selector can stall on a browser extension that never answers;
+          // give it 8s, then carry on signed out and let a later connect fix it.
+          const ready = (async () => {
+            const sel = await wallet.getSelector(b.network);
+            sel.store.observable.subscribe((st) => {
+              const a = st.accounts.find((x) => x.active)?.accountId ?? null;
+              setAccount(a);
+              if (a) refresh(a).catch(() => {});
+            });
+            return sel.store.getState().accounts.find((x) => x.active)?.accountId ?? null;
+          })();
+          acct = await Promise.race([ready, new Promise<null>((r) => setTimeout(() => r(null), 8_000))]);
         }
         setAccount(acct);
-        await refresh(acct);
+        if (acct) await refresh(acct);
         const saved = load(vaultId);
         if (saved && saved.account === acct) setSession(saved);
 

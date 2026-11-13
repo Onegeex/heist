@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { VaultView } from "@/lib/bank";
-import { near, plural } from "@/lib/format";
+import { near, plural, shortAccount } from "@/lib/format";
 import { Countdown } from "./Countdown";
 import { CountUp } from "./CountUp";
 
@@ -12,7 +12,7 @@ const FLOOR_LABEL: Record<VaultView["floor"], string> = {
 };
 
 /** One vault in the Bank: what's inside, what it costs, how long until the clock runs out. */
-export function FloorCard({ v }: { v: VaultView }) {
+export function FloorCard({ v, network = "testnet" }: { v: VaultView; network?: "testnet" | "mainnet" }) {
   return (
     <article className={`floor plate floor-${v.floor}`}>
       <div className="floor-tag">{v.sponsor ? `Sponsored by ${v.sponsor}` : FLOOR_LABEL[v.floor]}</div>
@@ -44,6 +44,17 @@ export function FloorCard({ v }: { v: VaultView }) {
       <p className="muted num" style={{ fontSize: ".85rem" }}>
         Round {v.round}. {plural(v.totalAttempts, "attempt")}. {near(v.totalPaid, 1)} NEAR paid out so far.
       </p>
+      {v.lastWinner ? (
+        <p className="cracked num">
+          <span className="stamp slam vault-open" style={{ fontSize: ".8rem", padding: "2px 7px" }}>CRACKED</span> Round {v.round - 1} went to{" "}
+          <a href={`https://${network === "mainnet" ? "" : "testnet."}nearblocks.io/address/${v.lastWinner}`} target="_blank" rel="noopener noreferrer">
+            {shortAccount(v.lastWinner)}
+          </a>
+          , paid by the contract.
+        </p>
+      ) : (
+        <p className="muted num" style={{ fontSize: ".85rem" }}>Never cracked.</p>
+      )}
       <Link className="btn" href={`/vault/${v.id}`}>
         {v.paused ? "Watch (closed)" : "Enter the vault"}
       </Link>
