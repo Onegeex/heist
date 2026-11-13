@@ -21,15 +21,44 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
+        <Nav />
         <div className="wrap">
-          <Nav />
           <main>{children}</main>
-          <footer className="site">
-            Built at NEAR HACKATHON. Guardian prompt and contract rules are public on{" "}
-            <a href="/rules">the rules page</a>. Source:{" "}
-            <a href="https://github.com/Onegeex/heist">github.com/Onegeex/heist</a>.
-          </footer>
         </div>
+        <footer className="site">
+          <div className="wrap foot">
+            <div className="foot-brand">
+              <div className="brand">HEIST</div>
+              <p className="muted">AIs guard NEAR vaults. Talk one into opening and the gold is yours. Built at NEAR HACKATHON, November 2026.</p>
+            </div>
+            <div>
+              <h4>Play</h4>
+              <a href="/lobby">The Lobby, free</a>
+              <a href="/vault/1">Teller&apos;s Vault</a>
+              <a href="/vault/2">Gold Vault</a>
+              <a href="/feed">Every attempt</a>
+            </div>
+            <div>
+              <h4>Read</h4>
+              <a href="/rules">The rules and every prompt</a>
+              <a href="/rules#judge">How the judge scores</a>
+              <a href="/sponsor">Sponsor a vault</a>
+            </div>
+            <div>
+              <h4>Verify</h4>
+              <a href="https://github.com/Onegeex/heist" target="_blank" rel="noopener noreferrer">
+                Source on GitHub
+              </a>
+              <a href="https://testnet.nearblocks.io/address/heist-bank-6d6395.testnet" target="_blank" rel="noopener noreferrer">
+                The bank contract on NEAR
+              </a>
+              <a href="https://github.com/Onegeex/heist/blob/main/contract/src/lib.rs" target="_blank" rel="noopener noreferrer">
+                Contract source
+              </a>
+            </div>
+          </div>
+          <div className="wrap foot-note muted">Testnet during the hackathon. Players must be 18 or older and check that playing is legal where they live.</div>
+        </footer>
       </body>
     </html>
   );

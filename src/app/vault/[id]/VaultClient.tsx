@@ -324,7 +324,7 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
         {!bank.demo && <TopUp account={account} feeYocto={v.fee} network={bank.network} />}
         {intel.length > 0 && (
           <div className="only-desk" style={{ marginTop: 16 }}>
-            <Dossier intel={intel} held={session?.record?.intel ?? []} used={session?.record?.intelUsed ?? []} rulesHref={`/rules#vault-${v.id}`} />
+            <Dossier intel={intel} held={session?.record?.intel ?? []} used={session?.record?.intelUsed ?? []} rulesHref={`/rules#vault-${v.id}`} canAsk={Boolean(session && status === "live")} />
           </div>
         )}
         {guardian && (

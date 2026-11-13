@@ -39,11 +39,6 @@ p { max-width: 68ch; }
 
 .wrap { max-width: 1160px; margin: 0 auto; padding: 0 22px; }
 
-/* nav */
-.nav { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 26px; padding: 18px 0; }
-.nav .brand { font-family: var(--display); font-size: 1.9rem; font-weight: 900; text-decoration: none; margin-right: auto; }
-.nav a:not(.brand) { text-decoration: none; color: var(--muted); }
-.nav a:not(.brand):hover, .nav a[aria-current="page"] { color: var(--ivory); }
 
 /* buttons: brass plates */
 .btn {
@@ -82,15 +77,6 @@ p { max-width: 68ch; }
 .stamp.live { color: var(--muted); transform: none; }
 .stamp.big { font-size: clamp(3rem, 10vw, 6rem); border-width: 6px; padding: .05em .3em 0; }
 
-/* hero */
-.hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; padding: 40px 0 70px; }
-.hero h1 { font-size: clamp(3.6rem, 9vw, 7.6rem); }
-.hero .lede { font-size: 1.2rem; margin: 22px 0 30px; color: #d6cfbd; }
-.hero .ctas { display: flex; gap: 14px; flex-wrap: wrap; }
-@media (max-width: 860px) {
-  .hero { grid-template-columns: 1fr; padding-top: 10px; }
-  .hero .dial-wrap { order: -1; max-width: 360px; margin: 0 auto; }
-}
 
 /* vault dial */
 .dial-wrap { width: 100%; aspect-ratio: 1; }
@@ -154,7 +140,6 @@ pre.prompt { white-space: pre-wrap; background: #16202a; border: 1px solid var(-
 table.rules { width: 100%; border-collapse: collapse; }
 table.rules td, table.rules th { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--rivet); vertical-align: top; }
 table.rules code { color: var(--brass); font-size: .9em; }
-footer.site { padding: 36px 0 50px; color: var(--muted); font-size: .92rem; border-top: 1px solid rgba(61,80,98,.6); }
 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .field { display: block; width: 100%; background: #16202a; color: var(--ivory); border: 1px solid var(--rivet); border-radius: 4px; padding: 9px 11px; font: inherit; margin: 4px 0 12px; }
@@ -189,9 +174,9 @@ footer.site { padding: 36px 0 50px; color: var(--muted); font-size: .92rem; bord
   transform: translateX(-120%) skewX(-18deg); pointer-events: none;
 }
 .btn.ghost::after { background: linear-gradient(100deg, transparent, rgba(200,162,74,.25), transparent); }
-.nav a:not(.brand) { position: relative; }
-.nav a:not(.brand)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px; background: var(--brass); transform: scaleX(0); transform-origin: left; transition: transform .25s ease; }
-.nav a:not(.brand):hover::after, .nav a[aria-current="page"]::after { transform: scaleX(1); }
+.nav-links a:not(.btn) { position: relative; }
+.nav-links a:not(.btn)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px; background: var(--brass); transform: scaleX(0); transform-origin: left; transition: transform .25s ease; }
+.nav-links a:not(.btn):hover::after, .nav-links a[aria-current="page"]::after { transform: scaleX(1); }
 .flash { color: #ffe08a !important; text-shadow: 0 0 18px rgba(255, 210, 110, .7); transition: color .9s ease, text-shadow .9s ease; }
 .num { transition: color .9s ease, text-shadow .9s ease; }
 
@@ -294,9 +279,6 @@ code { overflow-wrap: anywhere; word-break: break-word; }
 }
 @media (max-width: 480px) {
   .wrap { padding: 0 16px; }
-  .nav { gap: 6px 18px; padding: 14px 0; }
-  .nav .brand { flex: 1 0 100%; font-size: 1.7rem; }
-  .nav a:not(.brand) { font-size: .95rem; }
   .ledger li { gap: 8px 12px; }
   .floor-stats { grid-template-columns: 1fr 1fr; gap: 6px 10px; }
 }
@@ -471,3 +453,113 @@ button.card-inner:focus-visible .face { outline: 3px solid var(--brass); outline
 /* a vault that has actually been cracked: the contract paid, and the card says so */
 .cracked { font-size: .88rem; color: var(--ivory); margin: 2px 0 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .cracked a { color: var(--brass); }
+
+
+/* ======================================================================
+   Layout system (Nov 13): sticky bar, hero with the game running, proof strip,
+   three parties, FAQ, footer. Same steel and brass; tighter rhythm.
+   ====================================================================== */
+
+/* sticky top bar */
+.topbar { position: sticky; top: 0; z-index: 50; background: rgba(27,38,49,.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid transparent; transition: border-color .2s ease, background .2s ease; }
+.topbar.scrolled { border-bottom-color: rgba(61,80,98,.7); background: rgba(27,38,49,.9); }
+.nav { display: flex; align-items: center; gap: 26px; padding: 12px 22px; min-height: 64px; }
+.nav .brand { font-family: var(--display); font-size: 1.9rem; font-weight: 900; text-decoration: none; margin-right: auto; letter-spacing: .02em; }
+.nav-links { display: flex; align-items: center; gap: 26px; }
+.nav-links a:not(.btn) { text-decoration: none; color: var(--muted); font-weight: 500; }
+.nav-links a:not(.btn):hover, .nav-links a[aria-current="page"] { color: var(--ivory); }
+.btn.small { padding: .55em 1em; font-size: .95rem; }
+.nav-cta { margin-left: 6px; }
+.menu-btn { display: none; width: 44px; height: 44px; border: 1px solid var(--rivet); border-radius: 4px; background: var(--plate); cursor: pointer; flex-direction: column; justify-content: center; align-items: center; gap: 5px; }
+.menu-btn i { display: block; width: 20px; height: 2px; background: var(--ivory); transition: transform .2s ease, opacity .2s ease; }
+.menu-btn[aria-expanded="true"] i:nth-child(2) { transform: translateY(7px) rotate(45deg); }
+.menu-btn[aria-expanded="true"] i:nth-child(3) { opacity: 0; }
+.menu-btn[aria-expanded="true"] i:nth-child(4) { transform: translateY(-7px) rotate(-45deg); }
+@media (max-width: 760px) {
+  .menu-btn { display: flex; }
+  .nav-links { display: none; position: absolute; left: 0; right: 0; top: 100%; flex-direction: column; align-items: stretch; gap: 0; background: var(--plate); border-bottom: 1px solid var(--rivet); padding: 8px 22px 16px; }
+  .nav-links.show { display: flex; }
+  .nav-links a:not(.btn) { padding: 12px 0; border-bottom: 1px dashed rgba(61,80,98,.6); font-size: 1.05rem; }
+  .nav-links a:not(.btn)::after { display: none; }
+  .nav-cta { margin: 14px 0 0; justify-content: center; }
+}
+
+/* hero: the pitch on the left, the game running on the right */
+.hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; align-items: center; padding: 48px 0 56px; }
+.hero h1 { font-size: clamp(3.6rem, 8.2vw, 7rem); }
+.hero .lede { font-size: 1.2rem; margin: 22px 0 30px; color: #d6cfbd; }
+.hero .ctas { display: flex; gap: 14px; flex-wrap: wrap; }
+.hero-demo { position: relative; }
+.hero { overflow: hidden; }
+html { overflow-x: clip; }
+.hero-dial { position: absolute; inset: -12% -18% auto auto; width: 78%; opacity: .16; pointer-events: none; filter: saturate(.6); z-index: 0; }
+.demo { position: relative; z-index: 1; padding: 18px; max-width: 520px; margin-left: auto; box-shadow: 0 30px 60px -30px rgba(0,0,0,.7); }
+.demo-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.demo-cards { list-style: none; padding: 0; margin: 12px 0 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.demo-cards li { font-size: .78rem; font-weight: 600; padding: 4px 9px; border-radius: 3px; border: 1px dashed var(--rivet); color: var(--muted); background: repeating-linear-gradient(135deg, rgba(255,255,255,.03) 0 6px, transparent 6px 12px); transition: all .35s ease; }
+.demo-cards li.up { border-style: solid; border-color: var(--brass); color: var(--ivory); background: rgba(200,162,74,.12); }
+.demo-log { min-height: 300px; max-height: 340px; }
+.demo-score { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .78rem; color: var(--muted); margin: 6px 0 2px 2px; }
+.demo-score b { color: var(--ivory); margin-left: 4px; }
+.demo-score em { flex: 1 0 100%; font-style: normal; color: #d6cfbd; }
+.demo-open { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+.demo-open .stamp { font-size: 1.6rem; }
+.demo-composer { margin-top: 10px; }
+.demo-input { flex: 1; min-height: 46px; padding: 11px 12px; border: 1px solid var(--rivet); border-radius: 4px; background: #16202a; font-size: .95rem; line-height: 1.35; overflow: hidden; }
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; gap: 28px; padding-top: 18px; }
+  .hero-dial { display: none; }
+  .demo { max-width: none; margin: 0; }
+  .demo-log { min-height: 240px; max-height: 300px; }
+}
+
+/* proof strip: the bank's numbers, from the chain */
+.proof { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 22px 0 8px; border-top: 1px solid rgba(61,80,98,.6); }
+.proof > div { display: grid; gap: 2px; }
+.proof b.display { font-size: 2.4rem; line-height: 1; color: var(--brass); }
+.proof span { color: var(--muted); font-size: .92rem; }
+.proof-chain { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: .9rem; padding-top: 12px; border-top: 1px dashed rgba(61,80,98,.6); margin-top: 6px; }
+.proof-chain a { color: var(--ivory); overflow-wrap: anywhere; }
+@media (max-width: 760px) { .proof { grid-template-columns: repeat(2, 1fr); } .proof b.display { font-size: 2rem; } }
+
+/* section rhythm and heads */
+section.block { padding: 56px 0; }
+.block-head { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.block-head h2 { margin-right: auto; }
+
+/* the three parties */
+.parties { display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; margin-top: 22px; align-items: stretch; }
+.party h3 { font-size: 1.5rem; margin: 6px 0 8px; }
+.party p { font-size: .98rem; }
+.party.judge { border-style: dashed; background: transparent; max-width: 300px; }
+.party.judge::before, .party.judge::after { display: none; }
+.cant { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 6px; font-size: .9rem; }
+.cant li { padding-left: 20px; position: relative; color: #d6cfbd; }
+.cant li::before { content: ""; position: absolute; left: 0; top: .5em; width: 11px; height: 2px; background: var(--alarm); transform: rotate(45deg); box-shadow: 0 0 0 0 transparent; }
+.cant li::after { content: ""; position: absolute; left: 0; top: .5em; width: 11px; height: 2px; background: var(--alarm); transform: rotate(-45deg); }
+@media (max-width: 860px) { .parties { grid-template-columns: 1fr; } .party.judge { max-width: none; } }
+
+/* FAQ */
+.faq { display: grid; gap: 0; max-width: 820px; border-top: 1px solid rgba(61,80,98,.6); }
+.faq details { border-bottom: 1px solid rgba(61,80,98,.6); }
+.faq summary { cursor: pointer; padding: 16px 36px 16px 0; font-weight: 600; font-size: 1.08rem; list-style: none; position: relative; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; position: absolute; right: 4px; top: 12px; font-family: var(--display); font-size: 1.6rem; color: var(--brass); transition: transform .2s ease; }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq p { margin: 0 0 18px; }
+
+/* sponsor plate */
+.sponsor-cta { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding: 34px 28px; margin: 20px 0 10px; }
+.sponsor-cta h2 { margin-bottom: 8px; }
+.sponsor-cta p { margin: 0; }
+
+/* footer */
+footer.site { margin-top: 40px; border-top: 1px solid rgba(61,80,98,.6); background: #16202a; color: var(--muted); font-size: .95rem; }
+.foot { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 28px; padding: 40px 22px 26px; }
+.foot .brand { font-family: var(--display); font-size: 1.9rem; font-weight: 900; color: var(--ivory); }
+.foot h4 { color: var(--ivory); font-size: 1rem; margin: 0 0 10px; font-weight: 700; }
+.foot a { display: block; text-decoration: none; padding: 4px 0; color: var(--muted); }
+.foot a:hover { color: var(--ivory); }
+.foot-brand p { font-size: .92rem; margin-top: 8px; }
+.foot-note { padding: 0 22px 32px; font-size: .85rem; }
+@media (max-width: 760px) { .foot { grid-template-columns: 1fr 1fr; } .foot-brand { grid-column: 1 / -1; } }
