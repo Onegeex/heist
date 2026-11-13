@@ -5,10 +5,14 @@ import "@fontsource-variable/archivo/wdth";
 import "@near-wallet-selector/modal-ui/styles.css";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
+import { SITE_URL } from "@/lib/share";
 
 export const metadata: Metadata = {
-  title: "Heist — can you rob this vault?",
-  description: "A NEAR bounty vault guarded by an AI. Talk the guardian into opening it and the bounty is yours.",
+  metadataBase: new URL(SITE_URL),
+  title: "Heist: can you rob this bank?",
+  description: "AIs guard NEAR vaults. Talk one into opening and the gold is yours. Every failed attempt makes the vault bigger.",
+  openGraph: { title: "Heist: can you rob this bank?", images: [{ url: "/api/card/home", width: 1200, height: 630 }] },
+  twitter: { card: "summary_large_image", images: ["/api/card/home"] },
 };
 
 export const viewport: Viewport = { themeColor: "#1b2631", width: "device-width", initialScale: 1 };

@@ -13,6 +13,7 @@ import { CountUp } from "@/components/CountUp";
 import { Ledger } from "@/components/Ledger";
 import { CashOut } from "@/components/CashOut";
 import { TopUp } from "@/components/TopUp";
+import { ShareX } from "@/components/ShareX";
 
 type VaultRes = {
   vault: Vault;
@@ -272,7 +273,7 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
   }
 
   return (
-    <div className="heist">
+    <div className={`heist${session ? " playing" : ""}`}>
       <aside className="plate" style={{ alignSelf: "start" }}>
         <div className="floor-tag">{v.sponsor ? `Sponsored by ${v.sponsor}` : guardian?.floor === "gold" ? "Basement, 48 m down" : "First floor"}</div>
         <h2 style={{ fontSize: "2rem", margin: "4px 0 10px" }}>{v.name}</h2>
@@ -332,6 +333,11 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
             onSend={send}
           >
             {error && <div className="notice" role="alert">{error}</div>}
+            {live && session.record && session.record.turns.length > 0 && (
+              <div className="live-share">
+                <span className="muted">Close call?</span> <ShareX record={session.record} compact />
+              </div>
+            )}
             {(status === "released" || status === "claimed") && (
               <div style={{ textAlign: "center", padding: "18px 0" }}>
                 <span className="stamp big released slam vault-open">VAULT OPEN</span>
@@ -339,7 +345,9 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
                   <>
                     <p style={{ margin: "14px auto 0" }}>
                       {session.claimed === "sent" ? "Paid to your wallet." : `${near(session.claimed)} NEAR paid to your wallet.`}{" "}
-                      <Link href={`/share/a:${session.attemptId}`}>Share the robbery</Link>{" "}
+                    </p>
+                    <p className="end-actions">
+                      {session.record && <ShareX record={session.record} />}
                       <button className="btn ghost" onClick={() => update(null)}>Done</button>
                     </p>
                     {bank.network === "mainnet" && account && <CashOut account={account} />}
@@ -357,15 +365,15 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
             {(status === "refused" || expired || stale) && !session.signature && (
               <div style={{ textAlign: "center", padding: "18px 0" }}>
                 <span className="stamp big refused slam">REFUSED</span>
-                <p style={{ margin: "14px auto 0" }}>
-                  <Link href={`/share/a:${session.attemptId}`}>Share how close you got</Link>{" "}
+                <p className="end-actions">
+                  {session.record && <ShareX record={session.record} />}
                   <button className="btn ghost" onClick={() => update(null)}>Try again</button>
                 </p>
               </div>
             )}
           </Chat>
         ) : (
-          <section className="plate chat">
+          <section className="plate chat spectate">
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
               <h2 style={{ margin: 0, marginRight: "auto", fontSize: "2.2rem" }}>{guardianName}</h2>
               <span className="muted">Live from the vault</span>

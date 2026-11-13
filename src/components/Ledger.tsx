@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { PublicRecord } from "@/lib/feed";
 import { ago, near, shortAccount } from "@/lib/format";
+import { ShareX } from "./ShareX";
 
 const label: Record<PublicRecord["status"], string> = {
   live: "In progress",
@@ -65,9 +66,10 @@ export function Ledger({ items, empty = "No one has tried yet. Be the first.", f
                 {r.payoutYocto ? `${near(r.payoutYocto)} NEAR` : `resolve ${r.minIntegrity}`}
               </div>
               {!full && r.turns.length > 0 && (
-                <Link href={`/share/${encodeURIComponent(r.key)}`} style={{ fontSize: ".85rem" }}>
-                  Share
-                </Link>
+                <div className="ledger-actions">
+                  <Link href={`/share/${encodeURIComponent(r.key)}`}>Read</Link>
+                  <ShareX record={r} compact />
+                </div>
               )}
             </div>
           </li>

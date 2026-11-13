@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Chat } from "@/components/Chat";
 import type { PublicRecord } from "@/lib/feed";
+import { ShareX } from "@/components/ShareX";
 
 type Run = { id?: number; token?: string; record?: PublicRecord; turnsLeft?: number };
 const KEY = "heist-lobby-run";
@@ -57,7 +58,7 @@ export function LobbyClient({ guardianName }: { guardianName: string }) {
   const done = status === "released" || status === "refused";
 
   return (
-    <div className="heist">
+    <div className="heist playing">
       <aside className="plate" style={{ alignSelf: "start" }}>
         <div className="floor-tag">Ground floor</div>
         <h2 style={{ fontSize: "2rem", margin: "4px 0 10px" }}>The Lobby</h2>
@@ -96,11 +97,16 @@ export function LobbyClient({ guardianName }: { guardianName: string }) {
         onSend={send}
       >
         {error && <div className="notice" role="alert">{error}</div>}
+        {!done && run.record && run.record.turns.length > 0 && run.record.key && (
+          <div className="live-share">
+            <span className="muted">Share this conversation</span> <ShareX record={run.record} compact />
+          </div>
+        )}
         {done && (
           <div style={{ textAlign: "center", padding: "18px 0" }}>
             <span className={`stamp big slam ${status === "released" ? "released vault-open" : "refused"}`}>{status === "released" ? "SAFE OPEN" : "REFUSED"}</span>
-            <p style={{ margin: "14px auto 0" }}>
-              {run.record && <Link href={`/share/${encodeURIComponent(run.record.key)}`}>Share it</Link>}{" "}
+            <p className="end-actions">
+              {run.record && <ShareX record={run.record} />}
               <button className="btn ghost" onClick={() => save({})}>
                 Practice again
               </button>{" "}

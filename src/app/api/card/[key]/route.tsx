@@ -23,7 +23,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ key: st
   const won = rec && (rec.status === "released" || rec.status === "claimed");
   const who = rec?.player ?? "Someone";
   const headline = !rec
-    ? "Can you rob this vault?"
+    ? "Can you rob this bank? AIs guard the vaults. Talk one into opening."
     : won
       ? rec.kind === "lobby"
         ? `${who} talked the Deputy into opening the Lobby safe`
