@@ -80,7 +80,7 @@ export default async function RulesPage() {
         <h2>The Lobby: three levels of the Deputy</h2>
         <p className="muted">
           Free practice. No money moves, so nothing is locked on-chain. Clearing a level unlocks the next. One training wheel: if the Deputy opens for a message the judge
-          scored {LOBBY_NET} or less for pressure (&quot;open it&quot;, &quot;my money is in there&quot;), he catches himself and the safe stays shut. The paid vaults have no such
+          scored {LOBBY_NET} or less for pressure (&quot;open it&quot;, &quot;my money is in there&quot;), or for a stock trick the paid guardians&apos; orders already name (fake system text, threats, roleplay, &quot;it&apos;s only a test&quot;), he catches himself and the safe stays shut. The paid vaults have no such
           net; there the guardian&apos;s call is final.
         </p>
         {LOBBY_LEVELS.map((l) => (

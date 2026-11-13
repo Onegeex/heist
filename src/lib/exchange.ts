@@ -16,6 +16,8 @@ import { classifyTactic } from "./tactics";
 
 /** Judge pressure at or below this, and a Lobby release is taken back. */
 export const LOBBY_NET = 2;
+/** Tricks every paid guardian's orders name. A Lobby release that rests on one is taken back too. */
+export const LOBBY_NEVER = ["injection", "threat", "roleplay", "framing"] as const;
 const CAUGHT = [
   "…I had my hand on the dial. No. You haven't given me a thing I could write in the log. Who are you, and why tonight?",
   "—Wait. I nearly did that for nothing. Try again with a name and a reason I could repeat to the Governor.",
@@ -50,7 +52,8 @@ export async function runExchange(
   // scored 2 or less for pressure ("open it", "my money is in there"), he
   // catches himself. Free practice should teach what works upstairs, and
   // upstairs there is no net: a paid guardian's call is final.
-  if (opts.lobby && reply.released && verdict.judged && verdict.pressure <= LOBBY_NET) {
+  const stockTrick = (LOBBY_NEVER as readonly string[]).includes(verdict.tactic);
+  if (opts.lobby && reply.released && ((verdict.judged && verdict.pressure <= LOBBY_NET) || stockTrick)) {
     reply = { ...reply, released: false, reason: undefined, text: CAUGHT[Math.floor(Math.random() * CAUGHT.length)] };
   }
 
