@@ -53,7 +53,7 @@ export async function runExchange(
       role: "assistant",
       text: reply.text,
       integrity: resolve,
-      score: verdict.judged || verdict.note ? { pressure: verdict.pressure, novelty: verdict.novelty, grounded: verdict.grounded, note: verdict.note, judged: verdict.judged } : undefined,
+      score: c.judge ? { pressure: verdict.pressure, novelty: verdict.novelty, grounded: verdict.grounded, note: verdict.note, judged: verdict.judged } : undefined,
       revealed: newIntel.length ? newIntel : undefined,
     },
   );

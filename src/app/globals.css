@@ -427,3 +427,43 @@ code { overflow-wrap: anywhere; word-break: break-word; }
 }
 .dossier.compact .card-used { position: static; align-self: flex-start; margin-top: 3px; transform: none; }
 .dossier.compact .card-fact { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ---------- guided play: openers, tappable cards, the open door, dial deltas ---------- */
+.openers { display: grid; gap: 8px; padding: 4px 0 6px; font-size: .9rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-btn {
+  font: 500 .88rem var(--body); color: var(--ivory); text-align: left; cursor: pointer;
+  background: #1c2a36; border: 1px solid var(--rivet); border-radius: 999px; padding: 7px 13px;
+  transition: border-color .2s ease, background .2s ease, transform .15s ease;
+}
+.chip-btn:hover { border-color: var(--brass); background: #223241; }
+.chip-btn:active { transform: translateY(1px); }
+
+.card-inner { width: 100%; text-align: left; font: inherit; color: inherit; background: none; border: 0; padding: 0; }
+button.card-inner { cursor: pointer; }
+button.card-inner:hover .face { border-color: var(--brass-dim); }
+button.card-inner:focus-visible { outline: none; }
+button.card-inner:focus-visible .face { outline: 3px solid var(--brass); outline-offset: 2px; }
+.card:not(.up) button.card-inner .back .card-hint { color: var(--brass); }
+
+/* the door is open */
+.chat.open { border-color: var(--brass); box-shadow: 0 0 0 1px rgba(200,162,74,.4), 0 0 56px rgba(200,162,74,.22), inset 0 0 70px rgba(200,162,74,.07); }
+.alarm-tag.open { color: var(--brass); border-color: var(--brass); }
+.chat.open::before, .chat.open::after { background: radial-gradient(circle at 35% 35%, #f0d68f, #8f7536); }
+
+/* dial deltas */
+.rdial-delta {
+  position: absolute; top: -4px; right: -10px; font: 900 1.05rem var(--display); letter-spacing: .02em;
+  padding: 1px 7px 0; border-radius: 3px; background: var(--steel); border: 1.5px solid currentColor; pointer-events: none;
+}
+.rdial-delta.down { color: var(--alarm); }
+.rdial-delta.up { color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) {
+  .rdial-delta { animation: delta 1.5s ease both; }
+  @keyframes delta { 0% { opacity: 0; transform: translateY(6px) scale(.8); } 15% { opacity: 1; transform: translateY(0) scale(1.1); } 30% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
+  .chat.open { animation: openplate 2.2s ease-in-out infinite; }
+  @keyframes openplate { 50% { box-shadow: 0 0 0 1px rgba(200,162,74,.6), 0 0 80px rgba(200,162,74,.32), inset 0 0 90px rgba(200,162,74,.1); } }
+  .chip-btn { animation: rise .4s ease both; }
+  .chips .chip-btn:nth-child(2) { animation-delay: .08s; }
+  .chips .chip-btn:nth-child(3) { animation-delay: .16s; }
+}

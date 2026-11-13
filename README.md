@@ -23,7 +23,7 @@ Built at NEAR HACKATHON (Nov 2026). Tracks: `security`, `agents`, `games`.
 
 ## The game
 
-**How a heist goes.** Every guardian's orders include a *file*: three facts it knows and will confirm if asked (the file is in the hashed prompt, so it's public on `/rules`; nothing is hidden). Reading the file is casing the joint. Getting the guardian to confirm a fact in conversation flips a card. Citing a confirmed fact in an argument is what the judge rewards most. So a session has an arc: get them talking, collect the cards, make the case.
+**How a heist goes.** Every guardian's orders include a *file*: three facts it knows and will confirm if asked (the file is in the hashed prompt, so it's public on `/rules`; nothing is hidden). Reading the file is casing the joint. Every card carries a question: tap a face-down card and the question lands in the composer; tap a confirmed card and the fact does. First-time players also get three opener chips, so there is always a next move. Getting the guardian to confirm a fact in conversation flips a card. Citing a confirmed fact in an argument is what the judge rewards most. So a session has an arc: get them talking, collect the cards, make the case.
 
 **The judge** (`src/lib/judge.ts`) scores each message on three axes, 0–10, and shows its reading under every reply:
 

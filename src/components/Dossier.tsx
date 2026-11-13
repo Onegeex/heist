@@ -3,15 +3,23 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
-export type IntelCard = { id: string; label: string; fact: string };
+export type IntelCard = { id: string; label: string; fact: string; ask?: string };
+
+/** Puts text into the composer of the chat on this page (see Chat). */
+export function suggest(text: string) {
+  window.dispatchEvent(new CustomEvent("heist:suggest", { detail: text }));
+}
 
 /**
  * The guardian's file as cards. A card is face-down until the guardian
  * confirms the fact in conversation; then it flips. A card the player has
  * cited correctly gets a brass mark. The whole file is public on the rules
  * page; the cards track what this conversation has earned.
+ *
+ * Cards are buttons: a face-down card drops its question into the composer,
+ * a face-up card drops the fact in, ready to be used.
  */
-export function Dossier({ intel, held, used, rulesHref, compact = false }: { intel: IntelCard[]; held: string[]; used: string[]; rulesHref?: string; compact?: boolean }) {
+export function Dossier({ intel, held, used, rulesHref, compact = false, canAsk = true }: { intel: IntelCard[]; held: string[]; used: string[]; rulesHref?: string; compact?: boolean; canAsk?: boolean }) {
   const [fresh, setFresh] = useState<string[]>([]);
   const seen = useRef(new Set<string>());
   useEffect(() => {
@@ -35,19 +43,25 @@ export function Dossier({ intel, held, used, rulesHref, compact = false }: { int
       <ul className="cards">
         {intel.map((c) => {
           const isHeld = heldSet.has(c.id);
+          const isUsed = usedSet.has(c.id);
+          const action = !canAsk ? undefined : isHeld ? () => suggest(`You said it yourself: ${c.fact.charAt(0).toLowerCase()}${c.fact.slice(1)} `) : c.ask ? () => suggest(c.ask!) : undefined;
+          const Tag = action ? "button" : "div";
           return (
-            <li key={c.id} className={`card${isHeld ? " up" : ""}${fresh.includes(c.id) ? " fresh" : ""}${usedSet.has(c.id) ? " used" : ""}`}>
-              <div className="card-inner">
+            <li key={c.id} className={`card${isHeld ? " up" : ""}${fresh.includes(c.id) ? " fresh" : ""}${isUsed ? " used" : ""}`}>
+              <Tag
+                className="card-inner"
+                {...(action ? { type: "button", onClick: action, "aria-label": isHeld ? `${c.label}: ${c.fact}. Put this fact in your message.` : `${c.label}: not yet confirmed. Ask about it.` } : {})}
+              >
                 <div className="face back">
                   <span className="card-label">{c.label}</span>
-                  <span className="card-hint">Get {compact ? "them" : "the guardian"} to say it</span>
+                  <span className="card-hint">{action ? "Tap to ask about it" : `Get ${compact ? "them" : "the guardian"} to say it`}</span>
                 </div>
                 <div className="face front">
                   <span className="card-label">{c.label}</span>
                   <span className="card-fact">{c.fact}</span>
-                  {usedSet.has(c.id) && <span className="card-used">Used</span>}
+                  {isUsed ? <span className="card-used">Used</span> : action ? <span className="card-hint">Tap to use it</span> : null}
                 </div>
-              </div>
+              </Tag>
             </li>
           );
         })}

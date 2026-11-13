@@ -16,7 +16,8 @@ export default async function LobbyPage() {
     blurb: l.blurb,
     intro: l.intro,
     turns: l.turns,
-    intel: l.intel.map(({ id, label, fact }) => ({ id, label, fact })),
+    intel: l.intel.map(({ id, label, fact, ask }) => ({ id, label, fact, ask })),
+    openers: l.openers,
   }));
   return (
     <>

@@ -33,7 +33,7 @@ export function Scorecard({ score, used = [], labels = {} }: { score: Score; use
             </span>
           )}
           {score.note}
-          {!score.judged && <span className="muted"> (the judge was unavailable; this turn used the guardian&apos;s own reading)</span>}
+          {!score.judged && <span className="muted">Rough reading: the judge was off duty for this turn.</span>}
         </p>
       )}
     </div>

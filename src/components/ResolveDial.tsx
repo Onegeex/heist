@@ -10,11 +10,16 @@ import { useEffect, useRef, useState } from "react";
 export function ResolveDial({ value, label = "Resolve", size = 112 }: { value: number; label?: string; size?: number }) {
   const prev = useRef(value);
   const [kick, setKick] = useState<"down" | "up" | null>(null);
+  const [delta, setDelta] = useState<number | null>(null);
   useEffect(() => {
     if (value !== prev.current) {
       setKick(value < prev.current ? "down" : "up");
+      setDelta(value - prev.current);
       prev.current = value;
-      const t = setTimeout(() => setKick(null), 700);
+      const t = setTimeout(() => {
+        setKick(null);
+        setDelta(null);
+      }, 1500);
       return () => clearTimeout(t);
     }
   }, [value]);
@@ -51,6 +56,12 @@ export function ResolveDial({ value, label = "Resolve", size = 112 }: { value: n
         <text x="60" y="66" textAnchor="middle" fontFamily="var(--display)" fontWeight="900" fontSize="30" fill="#ece6d6" className="num">{value}</text>
       </svg>
       <span className="rdial-label">{label}</span>
+      {delta !== null && delta !== 0 && (
+        <span className={`rdial-delta num ${delta < 0 ? "down" : "up"}`} aria-hidden="true">
+          {delta < 0 ? "−" : "+"}
+          {Math.abs(delta)}
+        </span>
+      )}
     </div>
   );
 }

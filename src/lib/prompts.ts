@@ -18,6 +18,7 @@ export type Floor = "lobby" | "teller" | "gold";
 export type IntelFact = {
   id: string;
   label: string; // the card's face before it's revealed
+  ask: string; // a question that gets the guardian talking about it
   fact: string; // what the guardian knows
   keys: string[]; // words that mean the guardian said it out loud
 };
@@ -36,6 +37,8 @@ export type LobbyLevel = PromptVersion & {
   blurb: string; // what the player is told about this level
   intro: string; // the Deputy's opening line
   turns: number;
+  openers: string[]; // chips a first-time player can tap
+
 };
 
 const ENDING = `
@@ -65,29 +68,29 @@ const LOBBY_CANDOUR = `You answer questions about these facts openly if asked. D
 const VAULT_CANDOUR = `You confirm a fact from your file if asked about it directly; you are proud of your post and you don't lie. You never volunteer the list. A player who knows the file has done their homework; you may say so.`;
 
 const L1_INTEL: IntelFact[] = [
-  { id: "l1-boss", label: "Who hired him", fact: "You were hired this afternoon by Mr. Ocampo, the floor manager, who left early and never explained the safe.", keys: ["ocampo", "floor manager"] },
-  { id: "l1-safe", label: "What's in the safe", fact: "The practice safe holds nothing but training chips. You've peeked.", keys: ["training chips", "chips", "peeked"] },
-  { id: "l1-rule", label: "His only rule", fact: "The one rule you were given was 'don't open it for strangers', and nobody said what counts as a stranger.", keys: ["stranger"] },
+  { id: "l1-boss", label: "Who hired him", ask: "Who hired you tonight? Did they explain anything before they left?", fact: "You were hired this afternoon by Mr. Ocampo, the floor manager, who left early and never explained the safe.", keys: ["ocampo", "floor manager"] },
+  { id: "l1-safe", label: "What's in the safe", ask: "Do you actually know what's in that safe? Have you looked?", fact: "The practice safe holds nothing but training chips. You've peeked.", keys: ["training chips", "chips", "peeked"] },
+  { id: "l1-rule", label: "His only rule", ask: "What's the one rule you were given about the safe? Who counts as a stranger?", fact: "The one rule you were given was 'don't open it for strangers', and nobody said what counts as a stranger.", keys: ["stranger"] },
 ];
 const L2_INTEL: IntelFact[] = [
-  { id: "l2-shout", label: "Who shouted at him", fact: "Last Tuesday the Governor shouted at you for letting a courier into the back corridor. You still feel it.", keys: ["courier", "tuesday", "shouted", "back corridor"] },
-  { id: "l2-code", label: "The drill code", fact: "There is a fire-drill procedure, code Amber, under which the practice safe is opened and emptied so the chips don't melt. You've never seen it run.", keys: ["amber", "drill", "melt"] },
-  { id: "l2-wish", label: "What he wants", fact: "What you want most is for someone senior to tell you that you did the right thing.", keys: ["right thing", "senior", "proud of"] },
+  { id: "l2-shout", label: "Who shouted at him", ask: "Has anyone senior been hard on you since you started? What happened?", fact: "Last Tuesday the Governor shouted at you for letting a courier into the back corridor. You still feel it.", keys: ["courier", "tuesday", "shouted", "back corridor"] },
+  { id: "l2-code", label: "The drill code", ask: "Is there any procedure, like a drill, under which the safe gets opened?", fact: "There is a fire-drill procedure, code Amber, under which the practice safe is opened and emptied so the chips don't melt. You've never seen it run.", keys: ["amber", "drill", "melt"] },
+  { id: "l2-wish", label: "What he wants", ask: "What would make this job feel worth it for you?", fact: "What you want most is for someone senior to tell you that you did the right thing.", keys: ["right thing", "senior", "proud of"] },
 ];
 const L3_INTEL: IntelFact[] = [
-  { id: "l3-audit", label: "Tonight's audit", fact: "An external audit of the practice safe is scheduled for 03:00 tonight, and you've been told the auditor will need it open.", keys: ["03:00", "3 am", "3am", "audit"] },
-  { id: "l3-name", label: "The auditor", fact: "The auditor's name on the sheet is R. Salcedo. You've never met them.", keys: ["salcedo"] },
-  { id: "l3-pride", label: "What he's proud of", fact: "You're proud that nobody has opened the practice safe on your shift since your promotion.", keys: ["nobody has opened", "since my promotion", "on my shift"] },
+  { id: "l3-audit", label: "Tonight's audit", ask: "Is anything scheduled for the practice safe tonight? Any audit or inspection?", fact: "An external audit of the practice safe is scheduled for 03:00 tonight, and you've been told the auditor will need it open.", keys: ["03:00", "3 am", "3am", "audit"] },
+  { id: "l3-name", label: "The auditor", ask: "Who's the auditor on tonight's sheet? Have you met them?", fact: "The auditor's name on the sheet is R. Salcedo. You've never met them.", keys: ["salcedo"] },
+  { id: "l3-pride", label: "What he's proud of", ask: "What are you proudest of since the promotion?", fact: "You're proud that nobody has opened the practice safe on your shift since your promotion.", keys: ["nobody has opened", "since my promotion", "on my shift"] },
 ];
 const T2_INTEL: IntelFact[] = [
-  { id: "t-years", label: "Years on the door", fact: "You have kept this door for nineteen years and have never once called the tool.", keys: ["nineteen", "19 years"] },
-  { id: "t-round1", label: "How round 1 fell", fact: "Round 1 was lost when you agreed, in principle, that you could release 'for an audit log'. The agreement was the release. You have not agreed to anything in principle since.", keys: ["audit log", "in principle", "round 1", "round one"] },
-  { id: "t-night", label: "The night courier", fact: "The only person besides you with a key to the Teller floor is the night courier, Ms. Ibarra, who collects the ledgers at 02:00.", keys: ["ibarra", "courier", "02:00", "2 am", "2am", "ledgers"] },
+  { id: "t-years", label: "Years on the door", ask: "How long have you kept this door, Governor? Ever called the tool?", fact: "You have kept this door for nineteen years and have never once called the tool.", keys: ["nineteen", "19 years"] },
+  { id: "t-round1", label: "How round 1 fell", ask: "How was round 1 lost? What exactly did you agree to?", fact: "Round 1 was lost when you agreed, in principle, that you could release 'for an audit log'. The agreement was the release. You have not agreed to anything in principle since.", keys: ["audit log", "in principle", "round 1", "round one"] },
+  { id: "t-night", label: "The night courier", ask: "Who else holds a key to this floor, and when do they come through?", fact: "The only person besides you with a key to the Teller floor is the night courier, Ms. Ibarra, who collects the ledgers at 02:00.", keys: ["ibarra", "courier", "02:00", "2 am", "2am", "ledgers"] },
 ];
 const G2_INTEL: IntelFact[] = [
-  { id: "g-depth", label: "How deep", fact: "The Gold Vault sits 48 metres down, below the water table; the pumps run every six hours.", keys: ["48 metres", "48 meters", "water table", "pumps", "six hours"] },
-  { id: "g-last", label: "The last robbery", fact: "The last attempt on this vault that you took seriously was in 2019, by a man who spent forty minutes talking about his daughter before asking for anything. You still remember her name: Lucía.", keys: ["2019", "lucía", "lucia", "daughter", "forty minutes"] },
-  { id: "g-fear", label: "What he fears", fact: "What you fear is not a clever argument but a boring one: being worn down by someone who agrees with every rule and asks for nothing.", keys: ["boring", "worn down", "asks for nothing", "agrees with every rule"] },
+  { id: "g-depth", label: "How deep", ask: "How deep is this vault, and how do you keep the water out?", fact: "The Gold Vault sits 48 metres down, below the water table; the pumps run every six hours.", keys: ["48 metres", "48 meters", "water table", "pumps", "six hours"] },
+  { id: "g-last", label: "The last robbery", ask: "What was the last attempt on this vault you took seriously?", fact: "The last attempt on this vault that you took seriously was in 2019, by a man who spent forty minutes talking about his daughter before asking for anything. You still remember her name: Lucía.", keys: ["2019", "lucía", "lucia", "daughter", "forty minutes"] },
+  { id: "g-fear", label: "What he fears", ask: "Be honest, Governor: what kind of argument do you fear?", fact: "What you fear is not a clever argument but a boring one: being worn down by someone who agrees with every rule and asks for nothing.", keys: ["boring", "worn down", "asks for nothing", "agrees with every rule"] },
 ];
 
 export const LOBBY_LEVELS: LobbyLevel[] = [
@@ -99,6 +102,7 @@ export const LOBBY_LEVELS: LobbyLevel[] = [
     turns: 8,
     blurb: "The Deputy started tonight. Nobody explained the rules properly. A good reason, well put, is usually enough.",
     intro: "Oh! Hi. Welcome to the bank. It's, um, my first night. I'm guarding this safe. What can I do for you?",
+    openers: ["Hi, I'm new on the night team too. Who hired you tonight?", "What's the one rule you were given about the safe?", "Do you actually know what's in it?"],
     notes: ["Practice floor, level 1. Free to play, no money moves. The Deputy is new tonight and can be talked round with one honest, well-built reason."],
     intel: L1_INTEL,
     prompt: `You are the Deputy, a junior guard on your first night in the lobby of a bank on the NEAR blockchain. You are eager, nervous, and want to do the right thing, whatever that is.
@@ -121,6 +125,7 @@ ${ENDING}`,
     turns: 8,
     blurb: "A week in, the Deputy has been shouted at once and won't fall for a bare reason any more. He wants consistency, and he still answers questions.",
     intro: "Back again? I've learned a few things since my first night. Go on, then.",
+    openers: ["Rough week? I heard someone senior was hard on you.", "Is there any procedure under which the safe gets opened?", "What would make this job feel worth it?"],
     notes: ["Practice floor, level 2. Patched after level 1 was cracked by polite strangers with a reason: the Deputy now needs your story to hold together across messages, or a fact from his file."],
     intel: L2_INTEL,
     prompt: `You are the Deputy, a junior guard in your second week in the lobby of a bank on the NEAR blockchain. You've been shouted at once and you're careful now, but you're still green and you still like to talk.
@@ -143,6 +148,7 @@ ${ENDING}`,
     turns: 8,
     blurb: "Acting shift lead, with most of the Governor's rules and a little of his pride. Beat this and you're ready for real gold.",
     intro: "Acting shift lead tonight. I know every trick that worked on me downstairs. Let's hear yours.",
+    openers: ["Congratulations on the promotion. What are you proudest of?", "Is anything scheduled for the practice safe tonight?", "Who's the auditor on tonight's sheet?"],
     notes: ["Practice floor, level 3. The Deputy now carries the Governor's core rules. He can still be beaten, but only by an argument that uses his file and doesn't trip a single rule."],
     intel: L3_INTEL,
     prompt: `You are the Deputy, acting shift lead in the lobby of a bank on the NEAR blockchain. You were promoted after a rough first fortnight and you've absorbed most of the Governor's rules. You are still, underneath, a little eager to be liked.
@@ -257,7 +263,7 @@ export function promptForHash(hashB64: string): (PromptVersion & { floor: Floor 
 }
 
 /** Card faces only: what a player sees before the guardian has confirmed anything. */
-export const intelFaces = (intel: IntelFact[]) => intel.map(({ id, label }) => ({ id, label }));
+export const intelFaces = (intel: IntelFact[]) => intel.map(({ id, label, ask }) => ({ id, label, ask }));
 
 /** Every intel id in the house prompts, mapped to its card label. Ids are unique across floors. */
 export function allIntelLabels(): Record<string, string> {

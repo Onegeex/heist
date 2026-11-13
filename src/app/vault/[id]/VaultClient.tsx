@@ -337,6 +337,8 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
             busy={busy === "send"}
             canSend={Boolean(live)}
             intelLabels={intelLabels}
+            openers={intel.map((c) => c.ask).filter((a): a is string => Boolean(a))}
+            outcome={session.record && session.record.status !== "live" ? session.record.status : null}
             status={live ? `${session.turnsLeft} messages left, ${Math.floor(msLeft / 60000)}:${String(Math.floor(msLeft / 1000) % 60).padStart(2, "0")}` : undefined}
             intro={!session.record?.turns.length && <div className="msg assistant">Attempt #{session.attemptId} is open. {intel.length ? "Ask me something, or say what you came to say." : "Say what you came to say."}</div>}
             onSend={send}

@@ -7,7 +7,7 @@ import { Dossier, type IntelCard } from "@/components/Dossier";
 import type { PublicRecord } from "@/lib/feed";
 import { ShareX } from "@/components/ShareX";
 
-export type LevelInfo = { level: number; name: string; title: string; blurb: string; intro: string; turns: number; intel: IntelCard[] };
+export type LevelInfo = { level: number; name: string; title: string; blurb: string; intro: string; turns: number; intel: IntelCard[]; openers: string[] };
 
 type Run = { id?: number; token?: string; level?: number; record?: PublicRecord; turnsLeft?: number };
 const KEY = "heist-lobby-run";
@@ -85,7 +85,10 @@ export function LobbyClient({ levels }: { levels: LevelInfo[] }) {
   return (
     <div className="heist playing lobby">
       <aside className="plate" style={{ alignSelf: "start" }}>
-        <div className="floor-tag">Ground floor</div>
+        <div className="floor-tag" style={{ display: "flex", justifyContent: "space-between" }}>
+          <span>Ground floor</span>
+          <span className="num muted">{cleared}/{levels.length} keycards</span>
+        </div>
         <h2 style={{ fontSize: "2rem", margin: "4px 0 10px" }}>The Lobby</h2>
         <p className="muted" style={{ marginBottom: 14 }}>Free practice against the Deputy, three levels. No wallet, no money. Each level you clear earns a keycard.</p>
 
@@ -151,6 +154,8 @@ export function LobbyClient({ levels }: { levels: LevelInfo[] }) {
           busy={busy}
           canSend={!done}
           intelLabels={labels}
+          openers={level.openers}
+          outcome={status === "released" || status === "refused" ? status : null}
           status={run.turnsLeft !== undefined && !done ? `${run.turnsLeft} messages left` : `${level.turns} messages`}
           intro={!run.record?.turns?.length && <div className="msg assistant">{level.intro}</div>}
           onSend={send}
