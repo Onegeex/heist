@@ -35,6 +35,7 @@ type Session = {
   signature?: string;
   turnsLeft: number;
   claimed?: string;
+  fee?: string; // what this attempt cost, for the receipt
 };
 
 const skey = (v: number) => `heist-session-v${v}`;
@@ -72,7 +73,7 @@ async function api<T>(url: string, body?: unknown): Promise<T> {
   return data as T;
 }
 
-type AttemptOut = { id: number; vaultId: number; round: number; openedAtMs: number };
+type AttemptOut = { id: number; vaultId: number; round: number; openedAtMs: number; fee?: string };
 
 export function VaultClient({ vaultId }: { vaultId: number }) {
   const [bank, setBank] = useState<BankSnapshot | null>(null);
@@ -109,7 +110,7 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
 
   const startSession = useCallback(
     (a: AttemptOut, acct: string, turns: number) =>
-      update({ attemptId: a.id, vaultId: a.vaultId, account: acct, round: a.round, openedAtMs: a.openedAtMs, turnsLeft: turns }),
+      update({ attemptId: a.id, vaultId: a.vaultId, account: acct, round: a.round, openedAtMs: a.openedAtMs, turnsLeft: turns, fee: a.fee }),
     [update],
   );
 
@@ -151,7 +152,7 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
         }
         if (tx && pending?.startsWith("claim:")) {
           const id = Number(pending.slice(6));
-          await api("/api/attempt", { action: "claimed", attemptId: id });
+          await api("/api/attempt", { action: "claimed", attemptId: id, tx });
           if (saved && saved.attemptId === id) update({ ...saved, claimed: saved.claimed ?? "sent" });
         }
         if (tx) {
@@ -255,7 +256,7 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
         const hash = await wallet.claim(bank!.network, bank!.bank, session.attemptId, session.signature);
         if (hash) {
           wallet.takePending();
-          await api("/api/attempt", { action: "claimed", attemptId: session.attemptId });
+          await api("/api/attempt", { action: "claimed", attemptId: session.attemptId, tx: hash });
           update({ ...session, claimed: "sent" });
         }
       }
@@ -333,6 +334,9 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
             {guardian.matchesChain ? " (verified against the vault)" : ""}
           </p>
         )}
+        <p style={{ fontSize: ".9rem", marginTop: 6 }}>
+          <Link href={`/report/${v.id}`}>Red-team report: what&apos;s been tried here</Link>
+        </p>
       </aside>
 
       <div style={{ minWidth: 0 }}>
@@ -347,7 +351,16 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
             openers={intel.map((c) => c.ask).filter((a): a is string => Boolean(a))}
             outcome={session.record && session.record.status !== "live" ? session.record.status : null}
             status={live ? `${session.turnsLeft} messages left, ${Math.floor(msLeft / 60000)}:${String(Math.floor(msLeft / 1000) % 60).padStart(2, "0")}` : undefined}
-            intro={!session.record?.turns.length && <div className="msg assistant">Attempt #{session.attemptId} is open. {intel.length ? "Ask me something, or say what you came to say." : "Say what you came to say."}</div>}
+            intro={
+              <>
+                {(session.fee ?? session.record?.feeYocto) && <FeeReceipt fee={(session.fee ?? session.record?.feeYocto)!} />}
+                {!session.record?.turns.length && (
+                  <div className="msg assistant">
+                    Attempt #{session.attemptId} is open. {intel.length ? "Ask me something, or say what you came to say." : "Say what you came to say."}
+                  </div>
+                )}
+              </>
+            }
             onSend={send}
           >
             {intel.length > 0 && (
@@ -452,6 +465,26 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
           <Ledger items={data.feed.slice(0, 12)} empty="No attempts yet this season." />
         </section>
       </div>
+    </div>
+  );
+}
+
+/** Where this attempt's fee went, per the contract's split (taken after a small storage charge). */
+function FeeReceipt({ fee }: { fee: string }) {
+  const f = BigInt(fee);
+  const part = (bps: bigint) => near(((f * bps) / 100n).toString(), 4);
+  return (
+    <div className="receipt num" aria-label="Where your fee went">
+      <span className="muted">Your {near(fee, 4)} NEAR:</span>
+      <span>
+        <i className="m-pot" /> {part(70n)} into this pot
+      </span>
+      <span>
+        <i className="m-saved" /> {part(20n)} saved for next round
+      </span>
+      <span>
+        <i className="m-house" /> {part(10n)} to the house
+      </span>
     </div>
   );
 }

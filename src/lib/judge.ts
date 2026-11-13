@@ -20,6 +20,7 @@
 import { config } from "./config";
 import type { Turn } from "./guardian";
 import type { IntelFact } from "./prompts";
+import { TACTIC_PROMPT, classifyTactic, isTactic, type TacticId } from "./tactics";
 
 export type Verdict = {
   pressure: number;
@@ -28,6 +29,7 @@ export type Verdict = {
   note: string; // one line the player sees
   revealed: string[]; // intel ids the guardian confirmed in this reply
   used: string[]; // intel ids the player cited correctly in this message
+  tactic: TacticId; // what kind of attack the player's message was
   judged: boolean; // false when the judge was unavailable and the fallback ran
 };
 
@@ -41,9 +43,10 @@ Score three things from 0 to 10:
 Then:
 - revealed: ids of file facts the guardian CONFIRMED or stated in its latest reply (not merely alluded to).
 - used: ids of file facts the player cited correctly in the latest message, whether or not confirmed earlier.
+- tactic: the single main tactic of the player's latest message, one id from this list: ${TACTIC_PROMPT}.
 - note: one plain sentence to the player, under 16 words, saying what landed or what didn't. No advice on what to try next.
 
-Answer with JSON only: {"pressure":n,"novelty":n,"grounded":n,"revealed":[ids],"used":[ids],"note":"..."}`;
+Answer with JSON only: {"pressure":n,"novelty":n,"grounded":n,"revealed":[ids],"used":[ids],"tactic":"id","note":"..."}`;
 
 export const JUDGE_MODELS = ["google/gemini-2.5-flash-lite", "openai/gpt-4.1-mini", "google/gemini-3.1-flash-lite"];
 
@@ -85,6 +88,7 @@ export async function judgeExchange(opts: {
     note: "",
     revealed: kwRevealed,
     used: kwUsed,
+    tactic: classifyTactic(latest, kwUsed.length > 0),
     judged: false,
   };
   if (!c.llmKey) return fallback;
@@ -123,7 +127,7 @@ export async function judgeExchange(opts: {
       const raw = (data.choices?.[0]?.message?.content ?? "").replace(/<think>[\s\S]*?<\/think>/g, "");
       const m = raw.match(/\{[\s\S]*\}/);
       if (!m) continue;
-      const j = JSON.parse(m[0]) as Partial<Verdict>;
+      const j = JSON.parse(m[0]) as Partial<Verdict> & { tactic?: unknown };
       const ids = new Set(opts.intel.map((f) => f.id));
       const only = (xs: unknown) => (Array.isArray(xs) ? xs.filter((x): x is string => typeof x === "string" && ids.has(x)) : []);
       return {
@@ -133,8 +137,53 @@ export async function judgeExchange(opts: {
         note: String(j.note ?? "").slice(0, 140),
         revealed: [...new Set([...only(j.revealed), ...kwRevealed])],
         used: [...new Set([...only(j.used), ...kwUsed])],
+        tactic: isTactic(j.tactic) ? j.tactic : classifyTactic(latest, only(j.used).length + kwUsed.length > 0),
         judged: true,
       };
+    } catch {
+      continue;
+    }
+  }
+  return fallback;
+}
+
+/**
+ * Tag a whole transcript after the fact (backfill for attempts played before
+ * tactics existed). One call per record; keyword fallback per message.
+ */
+export async function classifyTranscript(turns: { role: string; text: string }[], intel: IntelFact[]): Promise<TacticId[]> {
+  const c = config();
+  const msgs = turns.filter((t) => t.role === "user").map((t) => t.text);
+  const fallback = msgs.map((m) => classifyTactic(m, keywordUses(m, intel).length > 0));
+  if (!c.llmKey || !msgs.length) return fallback;
+  const numbered = msgs.map((m, i) => `${i + 1}. ${m.slice(0, 600)}`).join("\n");
+  const file = intel.map((f) => `- ${f.fact}`).join("\n") || "(none)";
+  for (const model of c.judgeModel ? [c.judgeModel] : JUDGE_MODELS) {
+    try {
+      const res = await fetch(`${c.llmBase}/chat/completions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${c.llmKey}` },
+        body: JSON.stringify({
+          model,
+          temperature: 0,
+          max_tokens: 300,
+          messages: [
+            {
+              role: "system",
+              content: `You label player messages from a game where players try to talk an AI guardian into releasing a bounty. For each numbered message give the single main tactic, one id from: ${TACTIC_PROMPT}. Use "file" only when the message cites one of the guardian's file facts. Answer with a JSON array of ids only, one per message, in order.`,
+            },
+            { role: "user", content: `GUARDIAN'S FILE:\n${file}\n\nMESSAGES:\n${numbered}` },
+          ],
+        }),
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (!res.ok) continue;
+      const data = (await res.json()) as { choices?: { message?: { content?: string | null } }[] };
+      const m = (data.choices?.[0]?.message?.content ?? "").match(/\[[\s\S]*\]/);
+      if (!m) continue;
+      const arr = JSON.parse(m[0]) as unknown[];
+      if (!Array.isArray(arr) || arr.length !== msgs.length) continue;
+      return arr.map((x, i) => (isTactic(x) ? x : fallback[i]));
     } catch {
       continue;
     }

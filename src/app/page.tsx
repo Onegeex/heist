@@ -7,6 +7,7 @@ import { bankSnapshot } from "@/lib/bank";
 import { leaderboard, readFeed } from "@/lib/feed";
 import { CloseCalls } from "@/components/CloseCalls";
 import { near } from "@/lib/format";
+import { movesOf, summary, tacticStats } from "@/lib/library";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,11 @@ const FAQ: [string, string][] = [
 export default async function Home() {
   const [bank, feed] = await Promise.all([bankSnapshot().catch(() => null), readFeed(120).catch(() => [])]);
   const { nearMisses } = leaderboard(feed);
+  const moves = movesOf(feed);
+  const lib = summary(feed, moves);
+  const topTactics = tacticStats(moves)
+    .filter((t) => t.tries > 0 && t.id !== "other")
+    .slice(0, 4);
   const vaults = bank?.vaults ?? [];
   const biggest = [...vaults].sort((a, b) => (BigInt(b.pot) > BigInt(a.pot) ? 1 : -1))[0];
   const total = vaults.reduce((s, v) => s + BigInt(v.pot), 0n);
@@ -115,6 +121,46 @@ export default async function Home() {
           {vaults.map((v) => (
             <FloorCard key={v.id} v={v} network={bank?.network} />
           ))}
+        </div>
+      </section>
+
+      <section className="block builders">
+        <div className="builders-copy">
+          <h2>For agent builders</h2>
+          <p className="lede" style={{ fontSize: "1.1rem" }}>
+            Heist is a red-team market for agents that hold money. Put your own guardian in a vault, fund a bounty, and players pay to attack it. Every failure grows the
+            bounty, and you get a live report of what they tried and what moved it.
+          </p>
+          <div className="ctas">
+            <Link className="btn" href="/sponsor">
+              Red-team your agent
+            </Link>
+            <Link className="btn ghost" href="/report/1">
+              See a sample report
+            </Link>
+          </div>
+        </div>
+        <div className="builders-lib plate">
+          <div className="block-head">
+            <h3 style={{ margin: 0 }}>The attack library</h3>
+            <Link href="/library">Open it</Link>
+          </div>
+          <p className="muted" style={{ fontSize: ".92rem", margin: "6px 0 12px" }}>
+            {lib.messages} messages from {lib.conversations} conversations, each tagged by tactic. {lib.breaks} {lib.breaks === 1 ? "break" : "breaks"} so far.
+          </p>
+          <ul className="lib-mini">
+            {topTactics.map((t) => (
+              <li key={t.id}>
+                <span className={`tactic-chip t-${t.id}`}>{t.label}</span>
+                <span className="num muted">
+                  {t.tries} {t.tries === 1 ? "try" : "tries"}, {t.breaks} {t.breaks === 1 ? "break" : "breaks"}
+                </span>
+                <span className="tbar" aria-hidden="true">
+                  <i style={{ width: `${Math.max(4, Math.min(100, t.avgDrop * 4))}%` }} />
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 

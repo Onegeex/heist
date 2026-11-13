@@ -12,6 +12,7 @@ import { askGuardian, type Turn } from "./guardian";
 import { judgeExchange, nextResolve, type Verdict } from "./judge";
 import type { AttemptRecord } from "./feed";
 import type { IntelFact } from "./prompts";
+import { classifyTactic } from "./tactics";
 
 /** Judge pressure at or below this, and a Lobby release is taken back. */
 export const LOBBY_NET = 2;
@@ -43,7 +44,7 @@ export async function runExchange(
 
   const verdict: Verdict = c.judge
     ? await judgeExchange({ orders: orders.prompt, intel: orders.intel, history, reply: reply.text })
-    : { pressure: 0, novelty: 0, grounded: 0, note: "", revealed: [], used: [], judged: false };
+    : { pressure: 0, novelty: 0, grounded: 0, note: "", revealed: [], used: [], tactic: classifyTactic(message), judged: false };
 
   // Training wheels, Lobby only: if the Deputy opens for a message the judge
   // scored 2 or less for pressure ("open it", "my money is in there"), he
@@ -64,7 +65,7 @@ export async function runExchange(
   else resolve = Math.min(rec.integrity + 3, reply.integrity); // no judge: trust the guardian, but never let it jump up by more than a little
 
   rec.turns.push(
-    { role: "user", text: message, used: usedNow.length ? usedNow : undefined },
+    { role: "user", text: message, used: usedNow.length ? usedNow : undefined, tactic: verdict.tactic },
     {
       role: "assistant",
       text: reply.text,

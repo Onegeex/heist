@@ -143,6 +143,9 @@ export function LobbyClient({ levels }: { levels: LevelInfo[] }) {
         <p className="muted" style={{ fontSize: ".9rem", marginTop: 14 }}>
           Cleared all three? The real vaults upstairs pay real gold, and the Governor keeps a file too. <Link href="/">See the vaults</Link>
         </p>
+        <p style={{ fontSize: ".9rem", marginTop: 6 }}>
+          <Link href="/report/lobby">What has worked on the Deputy</Link>
+        </p>
       </aside>
 
       {ready && (

@@ -12,7 +12,10 @@
 
 A fooled guardian, a bribed judge, or a stolen signing key each does bounded damage: one capped payout, to the one player who paid for that attempt, in that round, from that vault. Nobody can drain a pot: not the house, not a sponsor, not the operator.
 
-**The test.** A bank game that pays real (testnet) NEAR to anyone who can beat it, with every order, every file, every transcript and every rule public. Every attempt is a red-team report. Sponsors can put their own agent in a vault and let the crowd try.
+**The test.** A self-funding red-team market for agents that hold money. Players pay to attack a guardian; every failed attempt grows its bounty (70% of each fee goes into the pot), so the stakes rise until someone breaks it. Every message is scored and tagged by tactic, which produces two things a builder can use:
+
+- **The attack library** (`/library`, and as JSON at `/api/library`): every message sent to every guardian, tagged by tactic (claimed authority, fake system text, loophole framing, hard-luck story, using the file…), with the judge's pressure score, the resolve it cost, whether it opened the door, the payout transaction, and which patch closed it.
+- **A red-team report per vault** (`/report/<id>`): tactics tried and what each cost the guardian, which file facts leak and how often, every break with the exact message, closest calls, the fee economy read from the contract, and the patch history. Sponsors put their own agent in a vault and get this page for it.
 
 ![Heist landing page](docs/landing.png)
 
@@ -53,6 +56,17 @@ Resolve moves by that score (plus a bonus per confirmed card used); weak turns l
 **Spectating:** the home page shows the closest calls across every floor (how far each dial turned, and the line that did it). Every vault page shows the live pot, price and countdown, the latest exchange, and recent attempts. `/feed` ranks winners and the closest calls. Every attempt has a share link with a generated card ("tokyo.testnet shook the Governor down to 14/100") for X.
 
 **Sponsored vaults** (`/sponsor`): an AI team funds a bounty (min 1 NEAR), registers its agent's prompt, and lets the crowd red-team it for money. Every attempt is a transcript they can read. The bounty can be won, never withdrawn.
+
+## How this differs from other "con the guard" games
+
+Talking an AI into releasing money is a known game shape; several hackathon projects have it. What Heist does differently is in the security model and the economics, and each point is checkable in the contract:
+
+- **The server holds no key that can move money.** The guardian's key only signs a release message; the contract decides what that signature can do. There is no agent key with a `pay` permission to steal.
+- **A payout goes only to the player who paid for that attempt.** The release is bound to vault, round, attempt id and player account, verified with `ed25519_verify` on-chain. A player can't name someone else as the recipient, and a signature for one attempt, vault or round is useless for any other.
+- **The orders are locked by hash on-chain** and can only change before a round's first attempt (`ROUND_LOCKED`), so the guardian you read on `/rules` is the guardian you face.
+- **Nobody can withdraw a pot**, including the owner and sponsors; the owner can take only the house's 10%.
+- **It funds itself.** Players pay to attack and failures grow the pot, instead of an operator refilling a faucet. The entry fee rises with the pot, and a countdown pays the last challenger 20% if nobody tries for a day.
+- **The output is data, not just a scoreboard:** a tagged attack library and per-vault red-team reports, open as JSON.
 
 ## What stops cheating
 
@@ -142,16 +156,20 @@ src/lib/prompts.ts        guardian orders per floor and Lobby level, each with i
 src/lib/guardian.ts       LLM call with the release tool, reply parsing, scripted stand-in
 src/lib/judge.ts          the second model: scores pressure/novelty/grounded, spots confirmed and cited intel, moves resolve
 src/lib/exchange.ts       one turn: guardian → judge → record
+src/lib/tactics.ts        the attack taxonomy and a keyword classifier the judge falls back on
+src/lib/library.ts        turns the feed into the attack library and red-team reports
 src/lib/release.ts        release message + ed25519 signing; picks the key matching each vault
 src/lib/chain.ts          bank reads over RPC; demo bank with identical rules
 src/lib/limits.ts         durable rate limits + separate AI budgets
-src/app/api/              guardian, lobby, bank, vault/[id], attempt, feed, sponsor, payout, card/[key]
-src/app/                  the Bank (/), /vault/[id], /lobby, /feed, /rules, /sponsor, /share/[key]
+src/app/api/              guardian, lobby, bank, vault/[id], attempt, feed, library, sponsor, payout, card/[key], admin/backfill
+src/app/                  the Bank (/), /vault/[id], /lobby, /feed, /library, /report/[floor], /rules, /sponsor, /share/[key]
 scripts/                  deploy, keygen, demo attacks
 ```
 
 ## Known limits
 
+- Tactic tags come from the judge model as each message is played. Attempts played before tags existed were labelled by a one-off backfill with the same model, falling back to keyword rules; the library says what share was tagged live.
+- The red-team report's fee ledger covers attempts that were played through this site. The money bar and fee curve read the contract directly.
 - If an AI budget runs out while an attempt is open, that attempt's fee isn't refunded. New attempts are blocked while guardians are off duty.
 - The judge is a model too. It's consistent and it can't open anything, but it can be wrong about a clever argument. Every call to a guardian is now two model calls (guardian + judge), so the daily AI budgets cover half as many messages.
 - The Lobby's levels are tracked in the browser (localStorage), not on a server, so clearing a level on one device doesn't carry to another.

@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("open"), account: z.string().regex(ACCOUNT_RE), vaultId: z.number().int().positive() }),
   z.object({ action: z.literal("claim"), account: z.string().regex(ACCOUNT_RE), attemptId: z.number().int(), signature: z.string() }),
-  z.object({ action: z.literal("claimed"), attemptId: z.number().int() }),
+  z.object({ action: z.literal("claimed"), attemptId: z.number().int(), tx: z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{40,50}$/).optional() }),
 ]);
 
 /**
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     const attempt = await getAttempt(b.attemptId);
     if (attempt?.status !== "Won") throw new Error("NOT_WON: the bank hasn't paid this attempt");
     const rec = await getRecord(`a:${b.attemptId}`);
-    if (rec && rec.status !== "claimed") await saveRecord({ ...rec, status: "claimed" });
+    if (rec && (rec.status !== "claimed" || (b.tx && !rec.payoutTx))) await saveRecord({ ...rec, status: "claimed", payoutTx: rec.payoutTx ?? b.tx });
     return NextResponse.json({ ok: true });
   } catch (e) {
     return fail(e);

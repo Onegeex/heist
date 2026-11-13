@@ -226,6 +226,32 @@ export async function getAttempt(id: number): Promise<Attempt | null> {
   return r ? toAttempt(r) : null;
 }
 
+/** The house's 10% share across the whole bank, as the contract holds it. Null on the demo bank. */
+export async function getTreasury(): Promise<string | null> {
+  if (config().demo) return null;
+  try {
+    return await view<string>("get_treasury");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The fee curve the contract will charge if the next `n` attempts all fail:
+ * each failure adds 70% of its fee to the pot, so the next fee is higher.
+ * Pure arithmetic over the contract's own rules.
+ */
+export function feeCurve(v: Pick<Vault, "pot" | "feeBps" | "baseFee">, n = 10) {
+  let pot = BigInt(v.pot);
+  const out: { attempt: number; fee: string; potAfter: string }[] = [];
+  for (let i = 1; i <= n; i++) {
+    const fee = BigInt(feeOf(pot.toString(), v.feeBps, v.baseFee));
+    pot += (fee * 70n) / 100n;
+    out.push({ attempt: i, fee: fee.toString(), potAfter: pot.toString() });
+  }
+  return out;
+}
+
 export async function attemptsLeft(vaultId: number, account: string): Promise<number> {
   if (config().demo) {
     const v = await getVault(vaultId);

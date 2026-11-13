@@ -1,5 +1,6 @@
 import { cmd, getJson, setJson } from "./store";
 import type { Turn } from "./guardian";
+import type { TacticId } from "./tactics";
 
 export type Score = { pressure: number; novelty: number; grounded: number; note: string; judged: boolean };
 
@@ -8,6 +9,7 @@ export type FeedTurn = Turn & {
   score?: Score; // the judge's reading of the player's message that led to it
   revealed?: string[]; // intel the guardian confirmed in this reply
   used?: string[]; // confirmed intel the player cited in the message before it
+  tactic?: TacticId; // on player turns: what kind of attack this message was
 };
 
 export type AttemptRecord = {
@@ -30,6 +32,7 @@ export type AttemptRecord = {
   model?: string;
   reason?: string;
   payoutYocto?: string;
+  payoutTx?: string; // the claim transaction, when the winner reported it
   feeYocto?: string;
   // server-only
   sessionHash?: string;

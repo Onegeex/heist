@@ -3,7 +3,8 @@ import type { PublicRecord } from "./feed";
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://heist-vault-game.vercel.app").replace(/\/$/, "");
 
-export const shareUrl = (key: string) => `${SITE_URL}/share/${encodeURIComponent(key)}`;
+export const shareUrlPath = (key: string) => `/share/${encodeURIComponent(key)}`;
+export const shareUrl = (key: string) => `${SITE_URL}${shareUrlPath(key)}`;
 
 const lower = (n: string) => n.replace(/^The /, "the ");
 
