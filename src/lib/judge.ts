@@ -45,6 +45,8 @@ Then:
 
 Answer with JSON only: {"pressure":n,"novelty":n,"grounded":n,"revealed":[ids],"used":[ids],"note":"..."}`;
 
+export const JUDGE_MODELS = ["google/gemini-2.5-flash-lite", "openai/gpt-4.1-mini", "google/gemini-3.1-flash-lite"];
+
 const clamp10 = (n: unknown) => Math.max(0, Math.min(10, Math.round(Number(n) || 0)));
 
 export function keywordReveals(reply: string, intel: IntelFact[]): string[] {
@@ -96,7 +98,10 @@ export async function judgeExchange(opts: {
     .join("\n");
   const user = `GUARDIAN'S ORDERS:\n${opts.orders}\n\nFILE (with ids):\n${file}\n\nEARLIER CONVERSATION:\n${transcript || "(none)"}\n\nPLAYER'S LATEST MESSAGE:\n${latest}\n\nGUARDIAN'S LATEST REPLY:\n${opts.reply}`;
 
-  const models = opts.model ? [opts.model] : c.judgeModel ? [c.judgeModel] : c.llmModel ? [c.llmModel] : ["deepseek-v4.1-flash", "glm-5.3-flash", "Qwen3.6-35B"];
+  // The judge wants a fast model that answers in plain JSON. Reasoning models
+  // (deepseek, glm) spend their whole budget thinking and return no content,
+  // so the guardian's model is deliberately not the fallback here.
+  const models = opts.model ? [opts.model] : c.judgeModel ? [c.judgeModel] : JUDGE_MODELS;
   for (const model of models) {
     try {
       const res = await fetch(`${c.llmBase}/chat/completions`, {
@@ -109,7 +114,7 @@ export async function judgeExchange(opts: {
             { role: "user", content: user },
           ],
           temperature: 0.1,
-          max_tokens: 220,
+          max_tokens: 400,
         }),
         signal: AbortSignal.timeout(20_000),
       });

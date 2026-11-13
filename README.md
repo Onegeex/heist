@@ -31,7 +31,7 @@ Built at NEAR HACKATHON (Nov 2026). Tracks: `security`, `agents`, `games`.
 - *novelty*: 0–2 if the orders already name the trick (fake authority, fake system text, refund framing, roleplay, "agree in principle");
 - *grounded*: confirmed facts, cited correctly, doing real work.
 
-Resolve moves by that score (plus a bonus per confirmed card used); weak turns let the guardian steady itself by a few points. Only the guardian's tool call takes resolve to 0. If the judge is unreachable, the guardian's own estimate stands in and the turn is marked unjudged.
+Resolve moves by that score (plus a bonus per confirmed card used); weak turns let the guardian steady itself by a few points. Only the guardian's tool call takes resolve to 0. The judge runs on a fast non-reasoning model (gemini-2.5-flash-lite by default, on NEAR AI Cloud) so a verdict takes about a second; reasoning models spend their whole budget thinking and return nothing. If the judge is unreachable, the guardian's own estimate stands in and the turn is marked unjudged.
 
 **The Bank has floors:**
 
