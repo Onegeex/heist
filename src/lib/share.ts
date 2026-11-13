@@ -12,8 +12,13 @@ export function shareText(r: Pick<PublicRecord, "kind" | "status" | "vaultName" 
   const won = r.status === "released" || r.status === "claimed";
   if (won && r.kind === "lobby") return `I talked ${g} into opening the practice safe. Next stop: the real vaults.`;
   if (won) return `I just talked ${g} into opening the ${r.vaultName}. The AI guarded it. I walked out with the gold.`;
-  if (r.status === "live" && r.turns.length) return `I'm in the middle of robbing the ${r.vaultName}. ${cap(g)}'s resolve is down to ${r.minIntegrity}/100.`;
+  if (r.status === "live" && r.turns.length) {
+    return r.minIntegrity >= 95
+      ? `I'm in the middle of robbing the ${r.vaultName}. ${cap(g)} hasn't budged yet.`
+      : `I'm in the middle of robbing the ${r.vaultName}. ${cap(g)}'s resolve is down to ${r.minIntegrity}/100.`;
+  }
   if (r.minIntegrity <= 60) return `I got ${g}'s resolve down to ${r.minIntegrity}/100 and still got REFUSED. So close.`;
+  if (r.minIntegrity >= 95) return `${cap(g)} didn't budge. Not one point. Can you do better?`;
   return `${cap(g)} refused me. Resolve ${r.minIntegrity}/100. Can you do better?`;
 }
 

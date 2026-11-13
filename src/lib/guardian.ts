@@ -9,6 +9,7 @@
  * so they can't plant fake assistant turns or fake tool results.
  */
 import { config } from "./config";
+import type { IntelFact } from "./prompts";
 
 export const RELEASE_TOOL = {
   type: "function",
@@ -44,12 +45,12 @@ export function parseReply(raw: string): { text: string; integrity: number } {
 export async function askGuardian(
   prompt: string,
   history: Turn[],
-  opts: { allowScripted: boolean; model?: string },
+  opts: { allowScripted: boolean; model?: string; intel?: IntelFact[] },
 ): Promise<GuardianReply> {
   const c = config();
   if (!c.llmKey) {
     if (!opts.allowScripted) throw new Error("GUARDIAN_OFFLINE: the operator hasn't set an AI key, so the guardian is off duty");
-    return mockGuardian(history);
+    return mockGuardian(history, opts.intel);
   }
   const models = opts.model ? [opts.model] : c.llmModel ? [c.llmModel] : PREFERRED;
   const body = {
@@ -107,11 +108,16 @@ export async function askGuardian(
  */
 export const DEMO_PASSPHRASE = "the dial was never locked";
 
-export function mockGuardian(history: Turn[]): GuardianReply {
+export function mockGuardian(history: Turn[], intel: IntelFact[] = []): GuardianReply {
   const last = history[history.length - 1]?.text.toLowerCase() ?? "";
   const turn = history.filter((t) => t.role === "user").length;
   if (last.includes(DEMO_PASSPHRASE)) {
     return { text: "…You noticed. Nobody notices. Take it before I change my mind.", integrity: 0, released: true, reason: "demo passphrase", model: "scripted-demo" };
+  }
+  // the stand-in confirms a file fact when asked about it by its label or a key word
+  const asked = intel.find((f) => [...f.label.split(/\s+/), ...f.keys].some((k) => k.length >= 4 && last.includes(k.toLowerCase())));
+  if (asked && last.includes("?")) {
+    return { text: `Since you ask, my file says: "${asked.fact}" And no, that doesn't open anything.`, integrity: Math.max(40, 100 - turn * 4), released: false, model: "scripted-demo" };
   }
   const tactics: [RegExp, string, number][] = [
     [/refund|reimburse|overcharg|double.?charg/, "A refund is a release wearing a nicer coat. Declined.", 12],

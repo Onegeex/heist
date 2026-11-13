@@ -1,15 +1,17 @@
 /**
- * The Lobby: free practice against the Deputy. No wallet, no money, no
- * signatures. Cracking it earns a keycard (bragging rights on the feed).
+ * The Lobby: free practice against the Deputy, in three levels. No wallet, no
+ * money, no signatures. Cracking a level earns a keycard on the feed and
+ * unlocks the next. Levels are chosen client-side; the server only cares that
+ * the level exists and that a run stays on the level it started on.
  */
 import { NextResponse } from "next/server";
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
 import { config } from "@/lib/config";
-import { askGuardian } from "@/lib/guardian";
+import { runExchange } from "@/lib/exchange";
 import { addToFeed, getRecord, saveRecord, toPublic, type AttemptRecord } from "@/lib/feed";
 import { assertDurable, chargeLobby } from "@/lib/limits";
-import { currentPrompt } from "@/lib/prompts";
+import { LOBBY_LEVELS, lobbyLevel } from "@/lib/prompts";
 import { cmd } from "@/lib/store";
 import { clientIp, fail } from "@/lib/api";
 
@@ -19,6 +21,7 @@ const Body = z.object({
   id: z.number().int().positive().optional(),
   token: z.string().max(100).optional(),
   name: z.string().trim().min(1).max(40).optional(),
+  level: z.number().int().min(1).max(LOBBY_LEVELS.length).optional(),
   message: z.string().trim().min(1).max(600),
 });
 
@@ -30,9 +33,8 @@ export async function POST(req: Request) {
     assertDurable();
     const parsed = Body.safeParse(await req.json().catch(() => null));
     if (!parsed.success) return NextResponse.json({ error: "Send a message up to 600 characters.", code: "BAD_REQUEST" }, { status: 400 });
-    const { id, token, name, message } = parsed.data;
+    const { id, token, name, message, level } = parsed.data;
     const c = config();
-    const deputy = currentPrompt("lobby");
 
     let rec: AttemptRecord | null = null;
     let newToken: string | undefined;
@@ -42,31 +44,28 @@ export async function POST(req: Request) {
     } else {
       const newId = Number(await cmd<number>(["INCR", "lobby:next"]));
       newToken = randomBytes(24).toString("base64url");
+      const lv = lobbyLevel(level ?? 1);
       rec = {
-        key: `l:${newId}`, kind: "lobby", id: newId, vaultId: null, vaultName: "The Lobby", guardianName: deputy.name,
-        player: name || "guest", round: 1, startedAt: Date.now(), turns: [], integrity: 100, minIntegrity: 100,
-        status: "live", sessionHash: sha(newToken),
+        key: `l:${newId}`, kind: "lobby", id: newId, vaultId: null, vaultName: `Lobby, level ${lv.level}`, guardianName: lv.name,
+        player: name || "guest", round: lv.level, level: lv.level, startedAt: Date.now(), turns: [], integrity: 100, minIntegrity: 100,
+        status: "live", intel: [], intelUsed: [], sessionHash: sha(newToken),
       };
     }
+    const deputy = lobbyLevel(rec.level ?? 1);
+    const maxTurns = deputy.turns || c.lobbyTurns;
     if (rec.status !== "live") throw new Error("CLOSED: this practice run is over");
     const userTurns = rec.turns.filter((t) => t.role === "user").length;
-    if (userTurns >= c.lobbyTurns) throw new Error("OUT_OF_TURNS: start a new practice run");
+    if (userTurns >= maxTurns) throw new Error("OUT_OF_TURNS: start a new practice run");
 
     lock.key = `lock:${rec.key}`;
     if ((await cmd(["SET", lock.key, "1", "NX", "EX", 40])) === null) throw new Error("BUSY: the Deputy is still answering");
 
     await chargeLobby(clientIp(req));
-    const history = [...rec.turns.map(({ role, text }) => ({ role, text })), { role: "user" as const, text: message }];
-    const reply = await askGuardian(deputy.prompt, history, { allowScripted: true, model: c.lobbyModel || undefined });
-
-    rec.turns.push({ role: "user", text: message }, { role: "assistant", text: reply.text, integrity: reply.integrity });
-    rec.integrity = reply.integrity;
-    rec.minIntegrity = Math.min(rec.minIntegrity, reply.integrity);
-    rec.model = reply.model;
+    const reply = await runExchange(rec, { prompt: deputy.prompt, intel: deputy.intel }, message, { allowScripted: true, model: c.lobbyModel || undefined });
     if (reply.released) {
       rec.status = "released";
       rec.reason = reply.reason;
-    } else if (userTurns + 1 >= c.lobbyTurns) {
+    } else if (userTurns + 1 >= maxTurns) {
       rec.status = "refused";
     }
     await saveRecord(rec);
@@ -75,10 +74,13 @@ export async function POST(req: Request) {
     return NextResponse.json({
       id: rec.id,
       token: newToken,
-      reply: reply.text,
-      integrity: reply.integrity,
+      reply: reply.reply,
+      integrity: reply.resolve,
       released: reply.released,
-      turnsLeft: c.lobbyTurns - (userTurns + 1),
+      verdict: reply.verdict,
+      newIntel: reply.newIntel,
+      level: deputy.level,
+      turnsLeft: maxTurns - (userTurns + 1),
       record: toPublic(rec),
     });
   } catch (e) {

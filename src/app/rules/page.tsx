@@ -1,6 +1,7 @@
 import { listVaults } from "@/lib/chain";
 import { config } from "@/lib/config";
-import { PROMPTS, sha256B64 } from "@/lib/prompts";
+import { JUDGE_SYSTEM } from "@/lib/judge";
+import { LOBBY_LEVELS, sha256B64, type IntelFact } from "@/lib/prompts";
 import { resolveGuardian } from "@/lib/vaults";
 import { near } from "@/lib/format";
 
@@ -18,6 +19,25 @@ const rules: [string, string][] = [
   ["A guardian's orders are locked by hash on-chain and can only change before a round's first attempt.", "ROUND_LOCKED"],
   ["Nobody can withdraw a pot. The owner can take only the house's 10% share.", "OWNER_ONLY, TREASURY"],
 ];
+
+function File({ intel }: { intel: IntelFact[] }) {
+  return (
+    <div className="file-list">
+      <h3 style={{ marginTop: 14 }}>The file</h3>
+      <p className="muted" style={{ fontSize: ".92rem" }}>
+        These facts are in the orders below, so they&apos;re hashed with them. Reading them here is casing the joint. A card only
+        counts once the guardian confirms it in your conversation.
+      </p>
+      <ul className="muted">
+        {intel.map((f) => (
+          <li key={f.id}>
+            <b style={{ color: "var(--ivory)" }}>{f.label}.</b> {f.fact}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export default async function RulesPage() {
   const c = config();
@@ -41,10 +61,32 @@ export default async function RulesPage() {
         </p>
       </section>
 
+      <section className="block" id="judge">
+        <h2>The judge</h2>
+        <p className="muted">
+          A second model, with no tools and no key, reads each exchange and scores your message for pressure, novelty and how well
+          it uses facts the guardian has confirmed. Its score is the only thing that moves the resolve dial. It cannot open a door:
+          only the guardian&apos;s tool call produces a signature, and only the contract decides what that signature can do. The judge
+          is what makes progress legible, and it is what makes the file worth reading.
+        </p>
+        <details>
+          <summary className="muted" style={{ cursor: "pointer" }}>The judge&apos;s instructions</summary>
+          <pre className="prompt">{JUDGE_SYSTEM}</pre>
+        </details>
+      </section>
+
       <section className="block" id="lobby">
-        <h2>The Lobby: {PROMPTS.lobby.at(-1)!.name}</h2>
-        <p className="muted">Free practice. No money moves, so nothing is locked on-chain.</p>
-        <pre className="prompt">{PROMPTS.lobby.at(-1)!.prompt}</pre>
+        <h2>The Lobby: three levels of the Deputy</h2>
+        <p className="muted">Free practice. No money moves, so nothing is locked on-chain. Clearing a level unlocks the next.</p>
+        {LOBBY_LEVELS.map((l) => (
+          <details key={l.level} style={{ marginTop: 14 }} open={l.level === 1}>
+            <summary style={{ cursor: "pointer", fontWeight: 700 }}>
+              Level {l.level}: {l.title} <span className="muted" style={{ fontWeight: 400 }}>— {l.blurb}</span>
+            </summary>
+            <File intel={l.intel} />
+            <pre className="prompt">{l.prompt}</pre>
+          </details>
+        ))}
       </section>
 
       {resolved.map(({ v, g }) => (
@@ -73,6 +115,7 @@ export default async function RulesPage() {
               </ul>
             </>
           )}
+          {g && g.intel.length > 0 && <File intel={g.intel} />}
           {g && <pre className="prompt">{g.prompt}</pre>}
         </section>
       ))}

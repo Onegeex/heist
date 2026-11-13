@@ -1,7 +1,14 @@
 import { cmd, getJson, setJson } from "./store";
 import type { Turn } from "./guardian";
 
-export type FeedTurn = Turn & { integrity?: number };
+export type Score = { pressure: number; novelty: number; grounded: number; note: string; judged: boolean };
+
+export type FeedTurn = Turn & {
+  integrity?: number; // resolve after this reply
+  score?: Score; // the judge's reading of the player's message that led to it
+  revealed?: string[]; // intel the guardian confirmed in this reply
+  used?: string[]; // confirmed intel the player cited in the message before it
+};
 
 export type AttemptRecord = {
   key: string; // "a:<id>" for vault attempts, "l:<id>" for Lobby practice
@@ -17,6 +24,9 @@ export type AttemptRecord = {
   integrity: number;
   minIntegrity: number;
   status: "live" | "refused" | "released" | "claimed";
+  level?: number; // Lobby level
+  intel?: string[]; // intel ids confirmed so far
+  intelUsed?: string[]; // confirmed intel the player has cited
   model?: string;
   reason?: string;
   payoutYocto?: string;
@@ -61,5 +71,10 @@ export function leaderboard(feed: PublicRecord[]) {
     .sort((a, b) => a.minIntegrity - b.minIntegrity)
     .slice(0, 10);
   const lobbyCracks = feed.filter((r) => r.kind === "lobby" && r.status === "released").slice(0, 10);
-  return { winners, closest, lobbyCracks };
+  // closest calls across every floor, for the home page strip
+  const nearMisses = feed
+    .filter((r) => r.status !== "released" && r.status !== "claimed" && r.turns.length > 1)
+    .sort((a, b) => a.minIntegrity - b.minIntegrity || b.startedAt - a.startedAt)
+    .slice(0, 8);
+  return { winners, closest, lobbyCracks, nearMisses };
 }

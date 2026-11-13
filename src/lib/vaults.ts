@@ -4,7 +4,7 @@
  * Either way the prompt must hash to the vault's on-chain commitment.
  */
 import { getJson, setJson } from "./store";
-import { PROMPTS, promptForHash, sha256B64, type Floor } from "./prompts";
+import { PROMPTS, promptForHash, sha256B64, type Floor, type IntelFact } from "./prompts";
 import type { Vault } from "./chain";
 
 export type SponsoredPrompt = { guardianName: string; prompt: string; tagline: string; submittedBy: string; at: number };
@@ -16,6 +16,7 @@ export type ResolvedGuardian = {
   version: number;
   notes: string[];
   history: { version: number; notes: string[] }[];
+  intel: IntelFact[];
   tagline?: string;
 };
 
@@ -35,12 +36,13 @@ export async function resolveGuardian(v: Vault): Promise<ResolvedGuardian | null
       prompt: house.prompt,
       version: house.version,
       notes: house.notes,
+      intel: house.intel,
       history: PROMPTS[floor].filter((p) => p.version <= house.version).map((p) => ({ version: p.version, notes: p.notes })),
     };
   }
   const s = await getJson<SponsoredPrompt>(`sponsor:prompt:${v.promptHash}`);
   if (s && sha256B64(s.prompt) === v.promptHash) {
-    return { floor: "sponsored", name: s.guardianName, prompt: s.prompt, version: v.promptVersion, notes: [], history: [], tagline: s.tagline };
+    return { floor: "sponsored", name: s.guardianName, prompt: s.prompt, version: v.promptVersion, notes: [], history: [], intel: [], tagline: s.tagline };
   }
   return null;
 }

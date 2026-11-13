@@ -3,7 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
 import { config, moneyRoutesBlocked } from "@/lib/config";
 import { bankName, demoSeeds, getAttempt, getVault } from "@/lib/chain";
-import { askGuardian } from "@/lib/guardian";
+import { runExchange } from "@/lib/exchange";
 import { addToFeed, getRecord, saveRecord, toPublic, type AttemptRecord } from "@/lib/feed";
 import { assertDurable, chargeMessage } from "@/lib/limits";
 import { keyForVault, releaseMessage, signRelease } from "@/lib/release";
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
       rec = {
         key, kind: "vault", id: attemptId, vaultId: vault.id, vaultName: vault.name, guardianName: guardian.name,
         player: account, round: attempt.round, startedAt: Date.now(), turns: [], integrity: 100, minIntegrity: 100,
-        status: "live", sessionHash: sha(newToken), feeYocto: attempt.fee,
+        status: "live", intel: [], intelUsed: [], sessionHash: sha(newToken), feeYocto: attempt.fee,
       } satisfies AttemptRecord;
     } else if (!token || sha(token) !== rec.sessionHash) {
       throw new Error("SESSION: this attempt's chat was opened in another browser");
@@ -73,14 +73,8 @@ export async function POST(req: Request) {
     // 5. Spend limits, before any money goes to the model.
     await chargeMessage(account, clientIp(req));
 
-    // 6. Ask the guardian with the server-held transcript.
-    const history = [...rec.turns.map(({ role, text }) => ({ role, text })), { role: "user" as const, text: message }];
-    const reply = await askGuardian(guardian.prompt, history, { allowScripted: c.demo });
-
-    rec.turns.push({ role: "user", text: message }, { role: "assistant", text: reply.text, integrity: reply.integrity });
-    rec.integrity = reply.integrity;
-    rec.minIntegrity = Math.min(rec.minIntegrity, reply.integrity);
-    rec.model = reply.model;
+    // 6. Ask the guardian with the server-held transcript, then the judge.
+    const reply = await runExchange(rec, { prompt: guardian.prompt, intel: guardian.intel }, message, { allowScripted: c.demo });
 
     let signature: string | undefined;
     if (reply.released) {
@@ -100,9 +94,11 @@ export async function POST(req: Request) {
     if (newToken) await addToFeed(rec);
 
     return NextResponse.json({
-      reply: reply.text,
-      integrity: reply.integrity,
+      reply: reply.reply,
+      integrity: reply.resolve,
       released: reply.released,
+      verdict: reply.verdict,
+      newIntel: reply.newIntel,
       signature,
       turnsLeft: c.turnsPerAttempt - (userTurns + 1),
       token: newToken,

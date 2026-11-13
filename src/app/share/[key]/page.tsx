@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getRecord, toPublic } from "@/lib/feed";
 import { Conversation } from "@/components/Conversation";
+import { allIntelLabels } from "@/lib/prompts";
 import { ShareX } from "@/components/ShareX";
 import { shareText } from "@/lib/share";
 import { ago, shortAccount } from "@/lib/format";
@@ -55,7 +56,7 @@ export default async function SharePage({ params }: P) {
             </div>
             <ShareX record={rec} />
           </div>
-          <Conversation r={rec} />
+          <Conversation r={rec} labels={allIntelLabels()} />
         </>
       ) : (
         <p className="muted">This conversation isn&apos;t available.</p>

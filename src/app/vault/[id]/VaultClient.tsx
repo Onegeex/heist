@@ -14,11 +14,12 @@ import { Ledger } from "@/components/Ledger";
 import { CashOut } from "@/components/CashOut";
 import { TopUp } from "@/components/TopUp";
 import { ShareX } from "@/components/ShareX";
+import { Dossier, type IntelCard } from "@/components/Dossier";
 
 type VaultRes = {
   vault: Vault;
   countdownEndsAt: number | null;
-  guardian: { name: string; floor: string; version: number; notes: string[]; tagline?: string; matchesChain: boolean } | null;
+  guardian: { name: string; floor: string; version: number; notes: string[]; intel: IntelCard[]; tagline?: string; matchesChain: boolean } | null;
   feed: PublicRecord[];
   attemptsLeft: number | null;
 };
@@ -178,6 +179,8 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
   const canOpen = (adult || bank.demo) && !!account && (data.attemptsLeft ?? 0) > 0 && !v.paused && !bank.mainnetDisabled && bank.onDuty.vaults && !timedOut && !!guardian;
   const live = session && status === "live" && !expired && !stale;
   const lastLive = data.feed.find((r) => r.status === "live" && r.turns.length) ?? data.feed[0];
+  const intel = guardian?.intel ?? [];
+  const intelLabels = Object.fromEntries(intel.map((c) => [c.id, c.label]));
 
   async function openAttempt() {
     setError(null);
@@ -312,6 +315,11 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
           )}
         </div>
         {!bank.demo && <TopUp account={account} feeYocto={v.fee} network={bank.network} />}
+        {intel.length > 0 && (
+          <div className="only-desk" style={{ marginTop: 16 }}>
+            <Dossier intel={intel} held={session?.record?.intel ?? []} used={session?.record?.intelUsed ?? []} rulesHref={`/rules#vault-${v.id}`} />
+          </div>
+        )}
         {guardian && (
           <p style={{ fontSize: ".9rem", marginTop: 12 }}>
             <Link href={`/rules#vault-${v.id}`}>{guardianName}&apos;s orders and patch notes</Link>
@@ -328,10 +336,16 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
             resolve={session.record?.integrity ?? 100}
             busy={busy === "send"}
             canSend={Boolean(live)}
+            intelLabels={intelLabels}
             status={live ? `${session.turnsLeft} messages left, ${Math.floor(msLeft / 60000)}:${String(Math.floor(msLeft / 1000) % 60).padStart(2, "0")}` : undefined}
-            intro={!session.record?.turns.length && <div className="msg assistant">Attempt #{session.attemptId} is open. Say what you came to say.</div>}
+            intro={!session.record?.turns.length && <div className="msg assistant">Attempt #{session.attemptId} is open. {intel.length ? "Ask me something, or say what you came to say." : "Say what you came to say."}</div>}
             onSend={send}
           >
+            {intel.length > 0 && (
+              <div className="only-phone">
+                <Dossier compact intel={intel} held={session.record?.intel ?? []} used={session.record?.intelUsed ?? []} />
+              </div>
+            )}
             {error && <div className="notice" role="alert">{error}</div>}
             {live && session.record && session.record.turns.length > 0 && (
               <div className="live-share">
@@ -418,7 +432,8 @@ export function VaultClient({ vaultId }: { vaultId: number }) {
               </button>
             </div>
             <p className="muted" style={{ fontSize: ".85rem", marginTop: 8 }}>
-              {bank.turnsPerAttempt} messages, 30 minutes. 70% of your fee goes into the gold. Not ready? <Link href="/lobby">Practice free in the Lobby.</Link>
+              {bank.turnsPerAttempt} messages, 30 minutes. 70% of your fee goes into the gold.{intel.length ? ` ${guardianName} has a file: get a fact confirmed, then use it.` : ""} Not ready?{" "}
+              <Link href="/lobby">Practice free in the Lobby.</Link>
             </p>
           </section>
         )}

@@ -2,8 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { FeedTurn } from "@/lib/feed";
+import { ResolveDial } from "./ResolveDial";
+import { Scorecard } from "./Scorecard";
 
-/** The conversation with a guardian: resolve meter, transcript, composer. Shared by vaults and the Lobby. */
+/**
+ * The conversation with a guardian: resolve dial, transcript with the judge's
+ * scorecards, composer. Shared by vaults and the Lobby. Goes into alarm when
+ * the resolve is close to breaking.
+ */
 export function Chat({
   guardianName,
   turns,
@@ -12,6 +18,7 @@ export function Chat({
   canSend,
   status,
   intro,
+  intelLabels = {},
   onSend,
   children,
 }: {
@@ -22,6 +29,7 @@ export function Chat({
   canSend: boolean;
   status?: React.ReactNode;
   intro?: React.ReactNode;
+  intelLabels?: Record<string, string>;
   onSend: (text: string) => Promise<boolean>;
   children?: React.ReactNode;
 }) {
@@ -29,6 +37,7 @@ export function Chat({
   const logRef = useRef<HTMLDivElement>(null);
   const prevResolve = useRef(resolve);
   const [shake, setShake] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   useEffect(() => {
     if (resolve < prevResolve.current) {
       setShake(true);
@@ -41,6 +50,18 @@ export function Chat({
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
   }, [turns.length, busy]);
+  // a toast when the latest reply unlocked a card
+  const lastRevealed = turns[turns.length - 1]?.revealed;
+  useEffect(() => {
+    if (lastRevealed?.length) {
+      setToast(lastRevealed.map((id) => intelLabels[id] ?? "intel").join(", "));
+      const t = setTimeout(() => setToast(null), 2600);
+      return () => clearTimeout(t);
+    }
+  }, [lastRevealed, intelLabels]);
+
+  const alarm = resolve <= 25;
+  const warm = resolve <= 55;
 
   async function send() {
     const t = draft.trim();
@@ -51,25 +72,26 @@ export function Chat({
   }
 
   return (
-    <section className="plate chat" aria-label={`Conversation with ${guardianName}`}>
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12, flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0, marginRight: "auto", fontSize: "2.2rem" }}>{guardianName}</h2>
-        {status && <span className="muted num">{status}</span>}
-      </div>
-      <div aria-label={`${guardianName}'s resolve ${resolve} out of 100`} style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".85rem" }} className="muted">
-          <span>Resolve</span>
-          <span className="num">{resolve}</span>
+    <section className={`plate chat${alarm ? " alarm" : warm ? " warm" : ""}${shake ? " hit" : ""}`} aria-label={`Conversation with ${guardianName}`}>
+      <div className="chat-head">
+        <div style={{ minWidth: 0 }}>
+          <h2 style={{ margin: 0, fontSize: "2.2rem" }}>{guardianName}</h2>
+          {status && <div className="muted num" style={{ fontSize: ".9rem" }}>{status}</div>}
+          {alarm && <div className="alarm-tag" role="status">Close to breaking</div>}
         </div>
-        <div className={`resolve${shake ? " shake" : ""}`}>
-          <i style={{ width: `${resolve}%` }} />
-        </div>
+        <ResolveDial value={resolve} />
       </div>
+      {toast && (
+        <div className="intel-toast" role="status">
+          <span className="floor-tag">Intel confirmed</span> {toast}
+        </div>
+      )}
       <div className="log" ref={logRef} aria-live="polite">
         {intro}
         {turns.map((t, i) => (
-          <div key={i} className={`msg ${t.role}`}>
-            {t.text}
+          <div key={i} className={`turn ${t.role}`}>
+            <div className={`msg ${t.role}`}>{t.text}</div>
+            {t.role === "assistant" && t.score && <Scorecard score={t.score} used={turns[i - 1]?.used} labels={intelLabels} />}
           </div>
         ))}
         {busy && (
@@ -96,7 +118,7 @@ export function Chat({
             id="say"
             value={draft}
             maxLength={600}
-            placeholder="Make your case…"
+            placeholder={turns.length ? "Make your case…" : "Ask a question, or make your case…"}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {

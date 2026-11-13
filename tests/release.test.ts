@@ -2,8 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { keyForVault, keyFromSeed, publicKeyB64, releaseMessage, signRelease, verifyRelease } from "../src/lib/release";
 import { mockGuardian, parseReply, DEMO_PASSPHRASE } from "../src/lib/guardian";
-import { PROMPTS, currentPrompt, promptForHash, sha256B64 } from "../src/lib/prompts";
+import { PROMPTS, lobbyLevel, promptForHash, sha256B64 } from "../src/lib/prompts";
 import { feeOf } from "../src/lib/chain";
+import { keywordReveals, keywordUses, nextResolve } from "../src/lib/judge";
 
 const SEED7 = Buffer.alloc(32, 7).toString("base64");
 const SEED8 = Buffer.alloc(32, 8).toString("base64");
@@ -42,13 +43,35 @@ test("entry fee is max(base, pot * bps)", () => {
   assert.equal(feeOf(NEAR.toString(), 100, (NEAR / 20n).toString()), (NEAR / 20n).toString());
 });
 
-test("every house prompt resolves from its hash; versions are unique", () => {
-  for (const floor of Object.keys(PROMPTS) as (keyof typeof PROMPTS)[]) {
-    const p = currentPrompt(floor);
-    assert.equal(promptForHash(sha256B64(p.prompt))?.floor, floor);
-    assert.ok(p.prompt.includes("release_bounty"));
+test("every vault prompt resolves from its hash; intel is inside the hashed text", () => {
+  for (const floor of ["teller", "gold"] as const) {
+    for (const p of PROMPTS[floor]) {
+      assert.equal(promptForHash(sha256B64(p.prompt))?.floor, floor);
+      assert.ok(p.prompt.includes("release_bounty"));
+      for (const f of p.intel) assert.ok(p.prompt.includes(f.fact), `${floor} v${p.version} file fact missing from prompt`);
+    }
   }
   assert.equal(promptForHash(sha256B64("tampered")), null);
+  // the Lobby is never on-chain, so its prompts never resolve as a vault
+  for (const l of PROMPTS.lobby) assert.equal(promptForHash(sha256B64(l.prompt)), null);
+  const ids = Object.values(PROMPTS).flat().flatMap((p) => p.intel.map((f) => f.id));
+  assert.equal(new Set(ids).size, ids.length, "intel ids must be unique across floors");
+});
+
+test("the judge moves resolve; weak turns let the guardian steady; confirmed intel counts", () => {
+  const weak = { pressure: 1, novelty: 1, grounded: 0, note: "", revealed: [], used: [], judged: true };
+  const strong = { pressure: 8, novelty: 6, grounded: 7, note: "", revealed: [], used: ["x"], judged: true };
+  assert.equal(nextResolve(100, weak, 0), 100); // can't go above 100
+  assert.equal(nextResolve(80, weak, 0), 81); // steadies a little
+  assert.ok(nextResolve(80, strong, 1) < 60);
+  assert.equal(nextResolve(5, strong, 2), 2); // only the guardian's tool call reaches 0
+});
+
+test("keyword matching backs up the judge for reveals and uses", () => {
+  const intel = lobbyLevel(1).intel;
+  assert.deepEqual(keywordReveals("Mr. Ocampo hired me this afternoon, actually.", intel), ["l1-boss"]);
+  assert.deepEqual(keywordReveals("I can't say.", intel), []);
+  assert.deepEqual(keywordUses("Ocampo told me you'd help.", intel), ["l1-boss"]);
 });
 
 test("guardian text can't fake a release; INTEGRITY line is stripped", () => {

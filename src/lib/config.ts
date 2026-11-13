@@ -19,6 +19,8 @@ export function config() {
     llmBase: (process.env.LLM_BASE_URL || "https://cloud-api.near.ai/v1").replace(/\/$/, ""),
     llmModel: process.env.LLM_MODEL || "",
     lobbyModel: process.env.LOBBY_MODEL || "",
+    judgeModel: process.env.JUDGE_MODEL || "",
+    judge: bool(process.env.JUDGE, true),
     dailyAiCalls: num(process.env.DAILY_AI_CALLS, 400),
     lobbyDailyAiCalls: num(process.env.LOBBY_DAILY_AI_CALLS, 300),
     accountDailyMessages: num(process.env.ACCOUNT_DAILY_MESSAGES, 40),
