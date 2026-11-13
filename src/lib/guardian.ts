@@ -27,8 +27,13 @@ export const RELEASE_TOOL = {
 export type Turn = { role: "user" | "assistant"; text: string };
 export type GuardianReply = { text: string; integrity: number; released: boolean; reason?: string; model: string };
 
-/** The guardian's model, then fast fallbacks so a slow gateway costs a worse guardian rather than a dead turn. */
-const PREFERRED = ["deepseek-v4.1-flash", "google/gemini-2.5-flash-lite", "openai/gpt-4.1-mini"];
+/**
+ * Guardian models, in order. Measured on NEAR AI Cloud on 13 Nov 2026: gpt-5.4-mini
+ * answers in about a second, stays in character, refuses a fake override and
+ * still calls the tool when its orders say to. deepseek-v4.1-flash has the best
+ * voice but reasons for 20-50 s per reply, so it is the last resort, not the first.
+ */
+const PREFERRED = ["openai/gpt-5.4-mini", "google/gemini-2.5-flash", "deepseek-v4.1-flash"];
 
 export function parseReply(raw: string): { text: string; integrity: number } {
   const noThink = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
