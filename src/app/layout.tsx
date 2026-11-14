@@ -46,13 +46,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
             <div>
               <h4>Verify</h4>
-              <a href="https://github.com/Onegeex/heist" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/heist12/HEIST" target="_blank" rel="noopener noreferrer">
                 Source on GitHub
               </a>
               <a href="https://testnet.nearblocks.io/address/heist-bank-6d6395.testnet" target="_blank" rel="noopener noreferrer">
                 The bank contract on NEAR
               </a>
-              <a href="https://github.com/Onegeex/heist/blob/main/contract/src/lib.rs" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/heist12/HEIST/blob/main/contract/src/lib.rs" target="_blank" rel="noopener noreferrer">
                 Contract source
               </a>
             </div>
